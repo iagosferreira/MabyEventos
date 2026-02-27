@@ -127,6 +127,9 @@ menuButtons.forEach(btn => {
         btn.classList.add('active');
         sections.forEach(s => s.classList.add('hidden'));
         document.getElementById(target).classList.remove('hidden');
+        
+        // Dá um trigger suave pro topo caso tenha rolado a página
+        window.scrollTo({top: 0, behavior: 'smooth'});
     });
 });
 
@@ -415,7 +418,7 @@ document.getElementById('btn-next-month').addEventListener('click', () => {
 });
 
 // ========================================================
-// MODAL DE DETALHES COM FINANCEIRO
+// MODAL DE DETALHES COM FINANCEIRO E TOASTS
 // ========================================================
 function abrirModalDetalhes(festasDoDia, dataBusca) {
     const container = document.getElementById('modal-dynamic-content');
