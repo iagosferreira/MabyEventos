@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MabyEventos - Gestão</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body data-theme="dark">
+
+    <div id="login-container" class="screen">
+        <div class="login-box">
+            <h2>MabyEventos</h2>
+            <p>Acesso Administrativo</p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" placeholder="Digite seu usuário" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" placeholder="Digite sua senha" required>
+                </div>
+                <button type="submit" class="btn-primary">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-container" class="screen hidden">
+        <header class="topbar">
+            <div class="logo">MabyEventos</div>
+            <div class="topbar-actions">
+                <button id="theme-toggle" class="icon-btn" title="Alternar Tema">
+                    <i class="ph ph-sun"></i>
+                </button>
+                <button id="logout-btn" class="icon-btn logout" title="Sair">
+                    <i class="ph ph-sign-out"></i> Sair
+                </button>
+            </div>
+        </header>
+
+        <section class="dashboard-cards">
+            <div class="card">
+                <div class="card-icon"><i class="ph ph-calendar-plus"></i></div>
+                <div class="card-info">
+                    <h3>Agendadas</h3>
+                    <p class="card-value" id="count-agendadas">0</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="ph ph-check-circle"></i></div>
+                <div class="card-info">
+                    <h3>Realizadas</h3>
+                    <p class="card-value" id="count-realizadas">0</p>
+                </div>
+            </div>
+            <div class="card highlight-pending">
+                <div class="card-icon"><i class="ph ph-money"></i></div>
+                <div class="card-info">
+                    <h3>A Receber</h3>
+                    <p class="card-value" id="val-pendente">R$ 0,00</p>
+                </div>
+            </div>
+            <div class="card highlight-done">
+                <div class="card-icon"><i class="ph ph-wallet"></i></div>
+                <div class="card-info">
+                    <h3>Recebido</h3>
+                    <p class="card-value" id="val-recebido">R$ 0,00</p>
+                </div>
+            </div>
+        </section>
+
+        <nav class="main-menu">
+            <button class="menu-btn active" data-view="view-calendar">
+                <i class="ph ph-calendar-blank"></i> Calendário
+            </button>
+            <button class="menu-btn" data-view="view-parties">
+                <i class="ph ph-confetti"></i> Festas Agendadas
+            </button>
+            <button class="menu-btn" data-view="view-schedule">
+                <i class="ph ph-plus-circle"></i> Agendar Festa
+            </button>
+            <button class="menu-btn" data-view="view-equipment">
+                <i class="ph ph-speaker-hifi"></i> Equipamentos
+            </button>
+        </nav>
+
+        <main class="content-area">
+            <section id="view-calendar" class="view-section">
+                <div class="section-header">
+                    <h2>Calendário de Eventos</h2>
+                    <h3 id="current-month">Outubro 2026</h3>
+                </div>
+                <div class="calendar-legend">
+                    <span class="legend-item"><div class="color-box border-grey"></div> Sem festas</span>
+                    <span class="legend-item"><div class="color-box border-blue"></div> 1 Festa</span>
+                    <span class="legend-item"><div class="color-box border-yellow"></div> +1 Festa</span>
+                    <span class="legend-item"><div class="color-box border-green"></div> Concluída</span>
+                </div>
+                <div class="calendar-grid">
+                    <div id="weekdays-container">
+                        <div class="weekday">Dom</div><div class="weekday">Seg</div><div class="weekday">Ter</div>
+                        <div class="weekday">Qua</div><div class="weekday">Qui</div><div class="weekday">Sex</div>
+                        <div class="weekday">Sáb</div>
+                    </div>
+                    <div id="calendar-days" class="days-grid"></div>
+                </div>
+            </section>
+
+            <section id="view-parties" class="view-section hidden">
+                <div class="section-header">
+                    <h2>Lista de Festas</h2>
+                    <div class="filters">
+                        <select id="filter-status">
+                            <option value="all">Todas</option>
+                            <option value="scheduled">Agendadas</option>
+                            <option value="completed">Concluídas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="party-list" id="party-list-container">
+                    <p>Nenhuma festa encontrada.</p>
+                </div>
+            </section>
+
+            <section id="view-schedule" class="view-section hidden">
+                <div class="section-header">
+                    <h2>Agendar Nova Festa</h2>
+                </div>
+                <form id="form-add-party" class="standard-form">
+                    <div class="form-row">
+                        <div class="input-group full-width">
+                            <label>Nome da Festa</label>
+                            <input type="text" id="party-name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group full-width">
+                            <label>Endereço / Local da Festa (Obrigatório)</label>
+                            <input type="text" id="party-address" placeholder="Rua, número, bairro ou nome do salão" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group highlight-input">
+                            <label>Equipamento</label>
+                            <select id="party-eq" required>
+                                <option value="">Selecione...</option>
+                                <option value="Plataforma 360">Plataforma 360</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Data</label>
+                            <input type="date" id="party-date" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Início do Trabalho (Obrigatório)</label>
+                            <input type="time" id="party-start-time" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Qtd. de Horas (Obrigatório)</label>
+                            <input type="number" id="party-hours" min="1" step="0.5" placeholder="Ex: 4" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Fim do Trabalho</label>
+                            <input type="time" id="party-end-time" readonly style="opacity: 0.6; cursor: not-allowed;" title="Calculado automaticamente">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Nome do Contratante</label>
+                            <input type="text" id="client-name" required>
+                        </div>
+                        <div class="input-group">
+                            <label>WhatsApp</label>
+                            <input type="tel" id="client-whatsapp" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Valor Cobrado R$</label>
+                            <input type="number" step="0.01" id="party-value" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Equipe</label>
+                            <input type="text" id="party-staff" placeholder="Ex: Eu e Auxiliar">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary large-btn">Confirmar Agendamento</button>
+                </form>
+            </section>
+
+            <section id="view-equipment" class="view-section hidden">
+                <div class="section-header">
+                    <h2>Cadastro de Equipamentos</h2>
+                </div>
+                <form id="form-add-equipment" class="standard-form">
+                    <div class="form-row">
+                        <div class="input-group full-width">
+                            <label>Nome do Equipamento</label>
+                            <input type="text" id="eq-name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Valor Sugerido R$</label>
+                            <input type="number" step="0.01" id="eq-value" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group full-width">
+                            <label>Foto do Equipamento</label>
+                            <div class="file-upload-box">
+                                <i class="ph ph-upload-simple"></i>
+                                <p>Clique para selecionar a imagem</p>
+                                <input type="file" id="eq-photo" accept="image/*" required>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary large-btn">Salvar Equipamento</button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
