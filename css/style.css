@@ -47,7 +47,7 @@ body {
     background-color: var(--bg-color); 
     color: var(--text-main); 
     transition: background-color 0.3s ease, color 0.3s ease; 
-    overflow-x: hidden; /* Previne scroll horizontal acidental */
+    overflow-x: hidden; 
 }
 
 html { scroll-behavior: smooth; }
@@ -135,7 +135,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]:
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
 .section-header h2 { font-size: 22px; color: var(--text-main); display: flex; align-items: center; }
 
-/* ==================== CALENDÁRIO (FIX MOBILE) ==================== */
+/* ==================== CALENDÁRIO ==================== */
 .calendar-nav { display: flex; align-items: center; gap: 15px; }
 .month-display { min-width: 140px; text-align: center; font-size: 18px; color: var(--text-main); }
 .calendar-legend { display: flex; gap: 20px; margin-bottom: 20px; font-size: 14px; flex-wrap: wrap; }
@@ -151,11 +151,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]:
 .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
 .weekday { text-align: center; font-weight: bold; color: var(--text-muted); font-size: 14px; }
 
-/* Dia do calendário: centralizado para não estourar layout no mobile */
 .cal-day { 
     aspect-ratio: 1; 
     display: flex; 
-    align-items: center; /* Centraliza conteúdo para caber melhor no mobile */
+    align-items: center; 
     justify-content: center; 
     padding: 5px; 
     border-radius: 8px; 
@@ -189,7 +188,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]:
 .party-info-item i { font-size: 18px; color: var(--accent-color); }
 .party-info-item strong { color: var(--text-main); margin-right: 4px; }
 
-/* EQUIPAMENTOS */
+/* ==================== EQUIPAMENTOS ==================== */
 .equip-item { display: flex; justify-content: space-between; align-items: center; background-color: var(--surface-color); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.02); margin-bottom: 10px; transition: transform 0.2s;}
 .equip-item:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 .equip-info { display: flex; flex-direction: column; gap: 5px; }
@@ -199,15 +198,13 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]:
 .btn-delete-icon:hover { transform: scale(1.2) rotate(5deg); }
 
 /* ==================== MODAIS E ANIMAÇÕES ==================== */
-/* Fade do fundo preto do Modal */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-/* Pop do conteúdo do Modal */
 @keyframes modalPop {
     0% { opacity: 0; transform: scale(0.9) translateY(20px); }
     100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; padding: 15px; }
+.modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; padding: 20px; }
 .modal:not(.hidden) { animation: fadeIn 0.2s ease-out; }
 .modal-content { background-color: var(--surface-color); padding: 30px; border-radius: 16px; width: 100%; border: 1px solid var(--border-color); position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.4); max-height: 90vh; overflow-y: auto; }
 .modal:not(.hidden) .modal-content { animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -264,15 +261,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]:
 @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
 
-/* ==================== RESPONSIVO MOBILE (AQUI CORRIGE O CALENDÁRIO) ==================== */
+/* ==================== RESPONSIVO MOBILE (AJUSTADO PARA MAIS RESPIRO) ==================== */
 @media (max-width: 768px) {
-    /* Ajustes globais para evitar vazamento da tela */
-    #app-container { padding: 10px; }
-    .view-section { padding: 20px 15px; } /* Reduz padding lateral da caixa branca */
+    /* Aumentando a distância das bordas da tela no celular */
+    #app-container { padding: 20px; }
+    .view-section { padding: 25px 20px; } 
     
     /* Menu Icones Mobile */
-    .icon-only-menu { gap: 10px; padding: 10px; }
-    .icon-only-menu .menu-btn { width: 50px; height: 50px; font-size: 26px; }
+    .icon-only-menu { gap: 12px; padding: 15px; margin-bottom: 25px; }
+    .icon-only-menu .menu-btn { width: 55px; height: 55px; font-size: 26px; }
     
     /* Formulários Mobile */
     .form-row { flex-direction: column; gap: 15px; }
@@ -281,25 +278,26 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]:
     .filter-group { width: 100%; justify-content: space-between; }
     
     /* Modais Mobile */
-    .modal-content { padding: 20px 15px; }
+    .modal { padding: 20px; } /* Afasta o modal das bordas */
+    .modal-content { padding: 25px 20px; }
     .modal-actions { flex-direction: column; }
     .btn-action { width: 100%; }
-    .finance-box-grid { grid-template-columns: 1fr; text-align: left; }
+    .finance-box-grid { grid-template-columns: 1fr; text-align: left; gap: 15px; }
     .finance-item { flex-direction: row; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
     
     /* O SEGREDO DO CALENDÁRIO NO CELULAR */
     .calendar-grid { width: 100%; overflow: hidden; }
-    #weekdays-container, .days-grid { gap: 4px; } /* Reduz drasticamente o espaço entre dias */
+    #weekdays-container, .days-grid { gap: 6px; } /* Dá um leve respiro entre os dias */
     .weekday { font-size: 13px; }
     .cal-day { 
-        font-size: 15px; 
-        padding: 2px; /* Remove padding excessivo que estourava o botão */
+        font-size: 16px; 
+        padding: 4px; 
         border-width: 2px;
-        border-radius: 6px;
+        border-radius: 8px;
     }
-    .calendar-nav { width: 100%; justify-content: space-between; margin-top: 10px; }
+    .calendar-nav { width: 100%; justify-content: space-between; margin-top: 15px; }
     
     /* Notificações mobile */
-    #toast-container { bottom: 20px; left: 15px; right: 15px; }
+    #toast-container { bottom: 20px; left: 20px; right: 20px; }
     .toast { width: 100%; justify-content: center; }
 }
