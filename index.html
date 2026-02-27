@@ -15,14 +15,14 @@
             <p>Acesso Administrativo</p>
             <form id="login-form">
                 <div class="input-group">
-                    <label for="username">Usuário</label>
-                    <input type="text" id="username" placeholder="Digite seu usuário" required>
+                    <label for="login-email">E-mail</label>
+                    <input type="email" id="login-email" placeholder="admin@email.com" required>
                 </div>
                 <div class="input-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" placeholder="Digite sua senha" required>
+                    <label for="login-password">Senha</label>
+                    <input type="password" id="login-password" placeholder="Sua senha" required>
                 </div>
-                <button type="submit" class="btn-primary">Entrar</button>
+                <button type="submit" class="btn-primary" id="btn-login">Entrar</button>
             </form>
         </div>
     </div>
@@ -71,38 +71,33 @@
             </div>
         </section>
 
-        <nav class="main-menu">
-            <button class="menu-btn active" data-view="view-calendar">
-                <i class="ph ph-calendar-blank"></i> Calendário
-            </button>
-            <button class="menu-btn" data-view="view-parties">
-                <i class="ph ph-confetti"></i> Festas Agendadas
-            </button>
-            <button class="menu-btn" data-view="view-schedule">
-                <i class="ph ph-plus-circle"></i> Agendar Festa
-            </button>
-            <button class="menu-btn" data-view="view-equipment">
-                <i class="ph ph-speaker-hifi"></i> Equipamentos
-            </button>
+        <nav class="main-menu icon-only-menu">
+            <button class="menu-btn active" data-view="view-calendar" title="Calendário"><i class="ph ph-calendar-blank"></i></button>
+            <button class="menu-btn" data-view="view-parties" title="Festas Agendadas"><i class="ph ph-confetti"></i></button>
+            <button class="menu-btn" data-view="view-schedule" title="Agendar Festa"><i class="ph ph-plus-circle"></i></button>
+            <button class="menu-btn" data-view="view-equipment" title="Equipamentos"><i class="ph ph-speaker-hifi"></i></button>
         </nav>
 
         <main class="content-area">
             <section id="view-calendar" class="view-section">
                 <div class="section-header">
                     <h2>Calendário de Eventos</h2>
-                    <h3 id="current-month">Outubro 2026</h3>
+                    <div class="calendar-nav">
+                        <button id="btn-prev-month" class="icon-btn" title="Mês Anterior"><i class="ph ph-caret-left"></i></button>
+                        <h3 id="current-month" class="month-display">Carregando...</h3>
+                        <button id="btn-next-month" class="icon-btn" title="Próximo Mês"><i class="ph ph-caret-right"></i></button>
+                    </div>
                 </div>
                 <div class="calendar-legend">
-                    <span class="legend-item"><div class="color-box border-grey"></div> Sem festas</span>
-                    <span class="legend-item"><div class="color-box border-blue"></div> 1 Festa</span>
-                    <span class="legend-item"><div class="color-box border-yellow"></div> +1 Festa</span>
-                    <span class="legend-item"><div class="color-box border-green"></div> Concluída</span>
+                    <span class="legend-item"><div class="color-box bg-grey"></div> Sem festas</span>
+                    <span class="legend-item"><div class="color-box bg-blue"></div> 1 Festa</span>
+                    <span class="legend-item"><div class="color-box bg-yellow"></div> +1 Festa</span>
+                    <span class="legend-item"><div class="color-box bg-green"></div> Concluída</span>
                 </div>
                 <div class="calendar-grid">
                     <div id="weekdays-container">
                         <div class="weekday">Dom</div><div class="weekday">Seg</div><div class="weekday">Ter</div>
-                        <div class="weekday">Qua</div><div class="weekday">Qui</div><div class="weekday">Sex</div>
-                        <div class="weekday">Sáb</div>
+                        <div class="weekday">Qua</div><div class="weekday">Qui</div><div class="weekday">Sex</div><div class="weekday">Sáb</div>
                     </div>
                     <div id="calendar-days" class="days-grid"></div>
                 </div>
@@ -111,12 +106,21 @@
             <section id="view-parties" class="view-section hidden">
                 <div class="section-header">
                     <h2>Lista de Festas</h2>
-                    <div class="filters">
-                        <select id="filter-status">
-                            <option value="all">Todas</option>
-                            <option value="scheduled">Agendadas</option>
-                            <option value="completed">Concluídas</option>
-                        </select>
+                    <div class="filter-panel">
+                        <div class="filter-group">
+                            <label><i class="ph ph-funnel"></i> Status</label>
+                            <select id="filter-status">
+                                <option value="all">Todas as Festas</option>
+                                <option value="agendada">Apenas Agendadas</option>
+                                <option value="concluida">Apenas Concluídas</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="ph ph-calendar"></i> Mês / Ano</label>
+                            <select id="filter-month">
+                                <option value="all">Todos os Meses</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="party-list" id="party-list-container">
@@ -126,103 +130,185 @@
 
             <section id="view-schedule" class="view-section hidden">
                 <div class="section-header">
-                    <h2>Agendar Nova Festa</h2>
+                    <h2><i class="ph ph-calendar-plus" style="color: var(--accent-color); margin-right: 8px;"></i> Agendar Nova Festa</h2>
                 </div>
                 <form id="form-add-party" class="standard-form">
-                    <div class="form-row">
-                        <div class="input-group full-width">
-                            <label>Nome da Festa</label>
-                            <input type="text" id="party-name" required>
+                    <div class="form-section-box">
+                        <h3 class="form-section-title"><i class="ph ph-confetti"></i> Detalhes do Evento</h3>
+                        <div class="form-row">
+                            <div class="input-group full-width">
+                                <label><i class="ph ph-text-aa"></i> Nome da Festa</label>
+                                <input type="text" id="party-name" placeholder="Ex: Aniversário João (15 anos)" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group full-width">
+                                <label><i class="ph ph-map-pin"></i> Endereço Completo (Local)</label>
+                                <input type="text" id="party-address" placeholder="Rua, número, bairro ou nome do salão" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group highlight-input">
+                                <label><i class="ph ph-speaker-hifi"></i> Equipamento Contratado</label>
+                                <select id="party-eq" required>
+                                    <option value="" disabled selected>Carregando equipamentos...</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label><i class="ph ph-calendar-blank"></i> Data do Evento</label>
+                                <input type="date" id="party-date" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label><i class="ph ph-clock"></i> Início do Trabalho</label>
+                                <input type="time" id="party-start-time" required>
+                            </div>
+                            <div class="input-group">
+                                <label><i class="ph ph-hourglass"></i> Qtd. de Horas</label>
+                                <input type="number" id="party-hours" min="1" step="0.5" placeholder="Ex: 4" required>
+                            </div>
+                            <div class="input-group">
+                                <label><i class="ph ph-flag-checkered"></i> Fim do Trabalho</label>
+                                <input type="time" id="party-end-time" readonly class="input-disabled" title="Calculado automaticamente">
+                            </div>
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="input-group full-width">
-                            <label>Endereço / Local da Festa (Obrigatório)</label>
-                            <input type="text" id="party-address" placeholder="Rua, número, bairro ou nome do salão" required>
+
+                    <div class="form-section-box">
+                        <h3 class="form-section-title"><i class="ph ph-user"></i> Cliente & Financeiro</h3>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label><i class="ph ph-identification-card"></i> Nome do Contratante</label>
+                                <input type="text" id="client-name" placeholder="Nome completo" required>
+                            </div>
+                            <div class="input-group">
+                                <label><i class="ph ph-whatsapp-logo"></i> WhatsApp</label>
+                                <input type="tel" id="client-whatsapp" placeholder="(00) 00000-0000" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label><i class="ph ph-currency-circle-dollar"></i> Valor Cobrado R$</label>
+                                <input type="number" step="0.01" id="party-value" placeholder="0,00" required>
+                            </div>
+                            <div class="input-group">
+                                <label><i class="ph ph-users"></i> Equipe (Staff)</label>
+                                <input type="text" id="party-staff" placeholder="Ex: Eu e Auxiliar">
+                            </div>
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="input-group highlight-input">
-                            <label>Equipamento</label>
-                            <select id="party-eq" required>
-                                <option value="">Selecione...</option>
-                                <option value="Plataforma 360">Plataforma 360</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Data</label>
-                            <input type="date" id="party-date" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="input-group">
-                            <label>Início do Trabalho (Obrigatório)</label>
-                            <input type="time" id="party-start-time" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Qtd. de Horas (Obrigatório)</label>
-                            <input type="number" id="party-hours" min="1" step="0.5" placeholder="Ex: 4" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Fim do Trabalho</label>
-                            <input type="time" id="party-end-time" readonly style="opacity: 0.6; cursor: not-allowed;" title="Calculado automaticamente">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="input-group">
-                            <label>Nome do Contratante</label>
-                            <input type="text" id="client-name" required>
-                        </div>
-                        <div class="input-group">
-                            <label>WhatsApp</label>
-                            <input type="tel" id="client-whatsapp" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="input-group">
-                            <label>Valor Cobrado R$</label>
-                            <input type="number" step="0.01" id="party-value" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Equipe</label>
-                            <input type="text" id="party-staff" placeholder="Ex: Eu e Auxiliar">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-primary large-btn">Confirmar Agendamento</button>
+                    <button type="submit" class="btn-primary large-btn"><i class="ph ph-check-circle"></i> Confirmar Agendamento</button>
                 </form>
             </section>
 
             <section id="view-equipment" class="view-section hidden">
                 <div class="section-header">
-                    <h2>Cadastro de Equipamentos</h2>
+                    <h2><i class="ph ph-speaker-hifi" style="color: var(--accent-color); margin-right: 8px;"></i> Gerenciar Equipamentos</h2>
                 </div>
-                <form id="form-add-equipment" class="standard-form">
-                    <div class="form-row">
-                        <div class="input-group full-width">
-                            <label>Nome do Equipamento</label>
-                            <input type="text" id="eq-name" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="input-group">
-                            <label>Valor Sugerido R$</label>
-                            <input type="number" step="0.01" id="eq-value" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="input-group full-width">
-                            <label>Foto do Equipamento</label>
-                            <div class="file-upload-box">
-                                <i class="ph ph-upload-simple"></i>
-                                <p>Clique para selecionar a imagem</p>
-                                <input type="file" id="eq-photo" accept="image/*" required>
+                
+                <form id="form-add-equipment" class="standard-form" style="margin-bottom: 40px;">
+                    <div class="form-section-box">
+                        <div class="form-row">
+                            <div class="input-group full-width">
+                                <label><i class="ph ph-text-aa"></i> Nome do Equipamento</label>
+                                <input type="text" id="eq-name" placeholder="Ex: Cabine de Fotos" required>
+                            </div>
+                            <div class="input-group">
+                                <label><i class="ph ph-currency-circle-dollar"></i> Valor Sugerido R$</label>
+                                <input type="number" step="0.01" id="eq-value" placeholder="0,00" required>
                             </div>
                         </div>
+                        <button type="submit" class="btn-primary"><i class="ph ph-floppy-disk"></i> Cadastrar Equipamento</button>
                     </div>
-                    <button type="submit" class="btn-primary large-btn">Salvar Equipamento</button>
                 </form>
+
+                <div class="section-header">
+                    <h3 style="color: var(--text-main); font-size: 18px;"><i class="ph ph-list-dashes"></i> Equipamentos Cadastrados</h3>
+                </div>
+                <div id="equipments-list-container" class="party-list">
+                    </div>
             </section>
         </main>
+    </div>
+
+    <div id="modal-party-details" class="modal hidden">
+        <div class="modal-content modal-large">
+            <span class="close-modal" id="close-modal">×</span>
+            <h2 id="modal-title">Eventos do Dia</h2>
+            <div class="modal-body" id="modal-dynamic-content"></div>
+        </div>
+    </div>
+
+    <div id="modal-edit-party" class="modal hidden">
+        <div class="modal-content modal-large">
+            <span class="close-modal" id="close-modal-edit">×</span>
+            <h2 style="color: var(--accent-color); margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                <i class="ph ph-pencil-simple"></i> Editar Festa
+            </h2>
+            <form id="form-edit-party" class="standard-form">
+                <input type="hidden" id="edit-party-id">
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label>Nome da Festa</label>
+                        <input type="text" id="edit-party-name" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label>Endereço / Local da Festa</label>
+                        <input type="text" id="edit-party-address" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group highlight-input">
+                        <label>Equipamento</label>
+                        <select id="edit-party-eq" required>
+                            <option value="" disabled selected>Selecione o equipamento...</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Data</label>
+                        <input type="date" id="edit-party-date" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Início do Trabalho</label>
+                        <input type="time" id="edit-party-start-time" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Qtd. de Horas</label>
+                        <input type="number" id="edit-party-hours" min="1" step="0.5" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Fim do Trabalho</label>
+                        <input type="time" id="edit-party-end-time" readonly class="input-disabled">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Nome do Contratante</label>
+                        <input type="text" id="edit-client-name" required>
+                    </div>
+                    <div class="input-group">
+                        <label>WhatsApp</label>
+                        <input type="tel" id="edit-client-whatsapp" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Valor Cobrado R$</label>
+                        <input type="number" step="0.01" id="edit-party-value" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Equipe</label>
+                        <input type="text" id="edit-party-staff">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary large-btn">Salvar Alterações</button>
+            </form>
+        </div>
     </div>
 
     <script type="module" src="js/main.js"></script>
