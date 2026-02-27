@@ -5,7 +5,6 @@ import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy 
 
 const festasRef = collection(db, "festas");
 
-// Função para SALVAR (Create)
 export async function addFesta(dadosDaFesta) {
     try {
         const docRef = await addDoc(festasRef, dadosDaFesta);
@@ -16,7 +15,6 @@ export async function addFesta(dadosDaFesta) {
     }
 }
 
-// Função para BUSCAR (Read)
 export async function getFestas() {
     try {
         const q = query(festasRef, orderBy("data", "asc"));
@@ -34,7 +32,6 @@ export async function getFestas() {
     }
 }
 
-// Função para ATUALIZAR (Update)
 export async function updateFesta(id, dadosAtualizados) {
     try {
         const festaDoc = doc(db, "festas", id);
@@ -45,7 +42,6 @@ export async function updateFesta(id, dadosAtualizados) {
     }
 }
 
-// Função para DELETAR (Delete)
 export async function deleteFesta(id) {
     try {
         const festaDoc = doc(db, "festas", id);

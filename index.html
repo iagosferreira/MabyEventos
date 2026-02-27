@@ -58,14 +58,14 @@
             <div class="card highlight-pending">
                 <div class="card-icon"><i class="ph ph-money"></i></div>
                 <div class="card-info">
-                    <h3>A Receber</h3>
+                    <h3>A Receber (Restante)</h3>
                     <p class="card-value" id="val-pendente">R$ 0,00</p>
                 </div>
             </div>
             <div class="card highlight-done">
                 <div class="card-icon"><i class="ph ph-wallet"></i></div>
                 <div class="card-info">
-                    <h3>Recebido</h3>
+                    <h3>Já Recebido</h3>
                     <p class="card-value" id="val-recebido">R$ 0,00</p>
                 </div>
             </div>
@@ -138,7 +138,7 @@
                         <div class="form-row">
                             <div class="input-group full-width">
                                 <label><i class="ph ph-text-aa"></i> Nome da Festa</label>
-                                <input type="text" id="party-name" placeholder="Ex: Aniversário João (15 anos)" required>
+                                <input type="text" id="party-name" placeholder="Ex: Festa 15 anos" required>
                             </div>
                         </div>
                         <div class="form-row">
@@ -189,12 +189,18 @@
                         </div>
                         <div class="form-row">
                             <div class="input-group">
-                                <label><i class="ph ph-currency-circle-dollar"></i> Valor Cobrado R$</label>
+                                <label><i class="ph ph-currency-circle-dollar"></i> Valor Total Cobrado R$</label>
                                 <input type="number" step="0.01" id="party-value" placeholder="0,00" required>
                             </div>
-                            <div class="input-group">
-                                <label><i class="ph ph-users"></i> Equipe (Staff)</label>
-                                <input type="text" id="party-staff" placeholder="Ex: Eu e Auxiliar">
+                            <div class="input-group financial-input">
+                                <label><i class="ph ph-hand-coins"></i> Valor de Entrada (Já pago) R$</label>
+                                <input type="number" step="0.01" id="party-paid" placeholder="0,00" value="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group full-width">
+                                <label><i class="ph ph-users"></i> Equipe</label>
+                                <input type="text" id="party-staff" placeholder="Presente na festa">
                             </div>
                         </div>
                     </div>
@@ -226,8 +232,7 @@
                 <div class="section-header">
                     <h3 style="color: var(--text-main); font-size: 18px;"><i class="ph ph-list-dashes"></i> Equipamentos Cadastrados</h3>
                 </div>
-                <div id="equipments-list-container" class="party-list">
-                    </div>
+                <div id="equipments-list-container" class="party-list"></div>
             </section>
         </main>
     </div>
@@ -298,16 +303,35 @@
                 </div>
                 <div class="form-row">
                     <div class="input-group">
-                        <label>Valor Cobrado R$</label>
+                        <label>Valor Total R$</label>
                         <input type="number" step="0.01" id="edit-party-value" required>
                     </div>
                     <div class="input-group">
+                        <label>Total Já Pago R$</label>
+                        <input type="number" step="0.01" id="edit-party-paid" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group full-width">
                         <label>Equipe</label>
                         <input type="text" id="edit-party-staff">
                     </div>
                 </div>
                 <button type="submit" class="btn-primary large-btn">Salvar Alterações</button>
             </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div id="custom-confirm-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center; padding: 40px 30px;">
+            <i class="ph ph-warning-circle" style="font-size: 60px; color: var(--status-many); margin-bottom: 15px; display: block;"></i>
+            <h3 id="confirm-message" style="margin-bottom: 25px; color: var(--text-main); font-size: 18px; line-height: 1.4;">Tem certeza?</h3>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="btn-confirm-cancel" class="btn-action" style="background-color: var(--surface-hover); color: var(--text-main); border: 1px solid var(--border-color);">Cancelar</button>
+                <button id="btn-confirm-ok" class="btn-action" style="background-color: var(--accent-color);">Confirmar</button>
+            </div>
         </div>
     </div>
 

@@ -5,7 +5,6 @@ import { collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic
 
 const equipRef = collection(db, "equipamentos");
 
-// SALVAR EQUIPAMENTO
 export async function addEquipamento(dados) {
     try {
         const docRef = await addDoc(equipRef, dados);
@@ -16,7 +15,6 @@ export async function addEquipamento(dados) {
     }
 }
 
-// BUSCAR EQUIPAMENTOS
 export async function getEquipamentos() {
     try {
         const querySnapshot = await getDocs(equipRef);
@@ -24,14 +22,13 @@ export async function getEquipamentos() {
         querySnapshot.forEach((doc) => {
             equipamentos.push({ id: doc.id, ...doc.data() });
         });
-        return equipamentos; // Retorna em ordem de cadastro
+        return equipamentos;
     } catch (error) {
         console.error("Erro ao buscar equipamentos: ", error);
         throw error;
     }
 }
 
-// DELETAR EQUIPAMENTO
 export async function deleteEquipamento(id) {
     try {
         await deleteDoc(doc(db, "equipamentos", id));

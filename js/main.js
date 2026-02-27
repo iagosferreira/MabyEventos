@@ -24,6 +24,57 @@ let equipamentosGlobais = [];
 const filterStatus = document.getElementById('filter-status');
 const filterMonth = document.getElementById('filter-month');
 
+// ========================================================
+// SISTEMA DE NOTIFICAÇÕES (TOAST) E CONFIRMAÇÕES (MODAL)
+// ========================================================
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    let icon = '';
+    if(type === 'success') icon = '<i class="ph ph-check-circle"></i>';
+    if(type === 'error') icon = '<i class="ph ph-warning-circle"></i>';
+    if(type === 'info') icon = '<i class="ph ph-info"></i>';
+
+    toast.innerHTML = `${icon} <span>${message}</span>`;
+    container.appendChild(toast);
+
+    // Remove do HTML depois que a animação CSS termina
+    setTimeout(() => {
+        toast.remove();
+    }, 3400); 
+}
+
+function customConfirm(message, onConfirm) {
+    const confirmModal = document.getElementById('custom-confirm-modal');
+    const msgEl = document.getElementById('confirm-message');
+    const btnOk = document.getElementById('btn-confirm-ok');
+    const btnCancel = document.getElementById('btn-confirm-cancel');
+
+    msgEl.textContent = message;
+    confirmModal.classList.remove('hidden');
+
+    // Remove eventos antigos para evitar disparos duplos
+    const newBtnOk = btnOk.cloneNode(true);
+    btnOk.parentNode.replaceChild(newBtnOk, btnOk);
+    const newBtnCancel = btnCancel.cloneNode(true);
+    btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+
+    newBtnCancel.addEventListener('click', () => {
+        confirmModal.classList.add('hidden');
+    });
+
+    newBtnOk.addEventListener('click', () => {
+        confirmModal.classList.add('hidden');
+        onConfirm(); // Executa a ação
+    });
+}
+window.customConfirm = customConfirm; // Torna global para usar no HTML
+
+// ========================================================
+// SISTEMA DE LOGIN REAL (FIREBASE AUTH)
+// ========================================================
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         loginContainer.classList.add('hidden');
@@ -48,8 +99,7 @@ loginForm.addEventListener('submit', async (e) => {
     try {
         await signInWithEmailAndPassword(auth, email, pass);
     } catch (error) {
-        console.error(error);
-        alert("Acesso Negado: Verifique seu e-mail ou senha.");
+        showToast("Acesso Negado: Verifique seu e-mail ou senha.", "error");
     } finally {
         btnLogin.textContent = "Entrar";
         btnLogin.disabled = false;
@@ -58,6 +108,9 @@ loginForm.addEventListener('submit', async (e) => {
 
 logoutBtn.addEventListener('click', () => signOut(auth));
 
+// ========================================================
+// UI: TEMA E NAVEGAÇÃO
+// ========================================================
 themeToggleBtn.addEventListener('click', () => {
     const isDark = body.getAttribute('data-theme') === 'dark';
     body.setAttribute('data-theme', isDark ? 'light' : 'dark');
@@ -109,12 +162,11 @@ setupCalculoHoras('party-start-time', 'party-hours', 'party-end-time');
 setupCalculoHoras('edit-party-start-time', 'edit-party-hours', 'edit-party-end-time');
 
 // ========================================================
-// CARREGAR EQUIPAMENTOS 
+// EQUIPAMENTOS
 // ========================================================
 async function carregarEquipamentos() {
     try {
         equipamentosGlobais = await getEquipamentos();
-        
         const listaContainer = document.getElementById('equipments-list-container');
         listaContainer.innerHTML = '';
         
@@ -129,7 +181,7 @@ async function carregarEquipamentos() {
                         <strong><i class="ph ph-speaker-hifi"></i> ${eq.nome}</strong>
                         <span>R$ ${Number(eq.valorSugerido).toFixed(2).replace('.', ',')} (Sugerido)</span>
                     </div>
-                    <button onclick="window.excluirEquipamento('${eq.id}')" class="btn-delete-icon" title="Excluir Equipamento">
+                    <button onclick="window.excluirEquipamento('${eq.id}')" class="btn-delete-icon" title="Excluir">
                         <i class="ph ph-trash"></i>
                     </button>
                 `;
@@ -139,30 +191,25 @@ async function carregarEquipamentos() {
 
         const selectAdd = document.getElementById('party-eq');
         const selectEdit = document.getElementById('edit-party-eq');
-        
         let optionsHtml = '<option value="" disabled selected>Selecione o equipamento...</option>';
-        
-        equipamentosGlobais.forEach(eq => {
-            optionsHtml += `<option value="${eq.nome}">${eq.nome}</option>`;
-        });
-
+        equipamentosGlobais.forEach(eq => { optionsHtml += `<option value="${eq.nome}">${eq.nome}</option>`; });
         selectAdd.innerHTML = optionsHtml;
         selectEdit.innerHTML = optionsHtml;
 
-    } catch (error) {
-        console.error("Erro ao carregar equipamentos", error);
+    } catch (error) { 
+        showToast("Erro ao carregar equipamentos.", "error"); 
     }
 }
 
-window.excluirEquipamento = async function(id) {
-    if(confirm("Deseja realmente excluir este equipamento? Ele desaparecerá da lista de opções para novos agendamentos.")) {
-        try {
-            await deleteEquipamento(id);
+window.excluirEquipamento = function(id) {
+    customConfirm("Deseja realmente excluir este equipamento? Ele desaparecerá das opções para novos agendamentos.", async () => {
+        try { 
+            await deleteEquipamento(id); 
             await carregarEquipamentos(); 
-        } catch(e) {
-            alert("Erro ao excluir.");
-        }
-    }
+            showToast("Equipamento excluído.", "success");
+        } 
+        catch(e) { showToast("Erro ao excluir equipamento.", "error"); }
+    });
 }
 
 const formAddEq = document.getElementById('form-add-equipment');
@@ -171,40 +218,42 @@ if(formAddEq) {
         e.preventDefault();
         const nomeEq = document.getElementById('eq-name').value;
         const valorEq = parseFloat(document.getElementById('eq-value').value);
-
         const btnSubmit = formAddEq.querySelector('button[type="submit"]');
         btnSubmit.disabled = true;
         btnSubmit.textContent = "Salvando...";
-
         try {
             await addEquipamento({ nome: nomeEq, valorSugerido: valorEq });
             formAddEq.reset();
             await carregarEquipamentos(); 
-        } catch (error) {
-            alert("Erro ao salvar equipamento.");
-        } finally {
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = `<i class="ph ph-floppy-disk"></i> Cadastrar Equipamento`;
-        }
+            showToast("Equipamento cadastrado com sucesso!", "success");
+        } catch (error) { 
+            showToast("Erro ao salvar equipamento.", "error"); 
+        } 
+        finally { btnSubmit.disabled = false; btnSubmit.innerHTML = `<i class="ph ph-floppy-disk"></i> Cadastrar Equipamento`; }
     });
 }
 
 
 // ========================================================
-// CARREGAR E RENDERIZAR FESTAS
+// FESTAS E FINANCEIRO
 // ========================================================
 async function carregarDadosGlobais() {
     try {
         festasGlobais = await getFestas();
 
         let qtdAgendadas = 0, qtdRealizadas = 0, valorReceber = 0, valorRecebido = 0;
+        
         festasGlobais.forEach(festa => {
-            const valorSeguro = Number(festa.valor) || 0;
-            if (festa.status === 'agendada') {
-                qtdAgendadas++; valorReceber += valorSeguro;
-            } else if (festa.status === 'concluida') {
-                qtdRealizadas++; valorRecebido += valorSeguro;
-            }
+            const total = Number(festa.valor) || 0;
+            const pago = Number(festa.valorPago) || 0; 
+            
+            valorRecebido += pago;
+            let restante = total - pago;
+            if (restante < 0) restante = 0;
+            valorReceber += restante;
+
+            if (festa.status === 'agendada') qtdAgendadas++;
+            else if (festa.status === 'concluida') qtdRealizadas++;
         });
 
         document.getElementById('count-agendadas').textContent = qtdAgendadas;
@@ -215,21 +264,17 @@ async function carregarDadosGlobais() {
         popularFiltroMeses(festasGlobais);
         aplicarFiltrosNaLista();
         renderCalendar();
-    } catch (error) {
-        console.log(error);
+    } catch (error) { 
+        showToast("Erro ao carregar dados do banco.", "error"); 
     }
 }
 
 function popularFiltroMeses(festas) {
     const mesesExistentes = new Set();
-    festas.forEach(f => {
-        if(f.data) mesesExistentes.add(f.data.substring(0, 7)); 
-    });
-
+    festas.forEach(f => { if(f.data) mesesExistentes.add(f.data.substring(0, 7)); });
     const mesesOrdenados = Array.from(mesesExistentes).sort().reverse();
     filterMonth.innerHTML = '<option value="all">Todos os Meses</option>';
     const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-    
     mesesOrdenados.forEach(anoMes => {
         const [ano, mes] = anoMes.split('-');
         const option = document.createElement('option');
@@ -242,14 +287,12 @@ function popularFiltroMeses(festas) {
 function aplicarFiltrosNaLista() {
     const statusSel = filterStatus.value;
     const mesSel = filterMonth.value;
-
     const festasFiltradas = festasGlobais.filter(f => {
         if (!f.data) return false;
         const passaStatus = (statusSel === 'all' || f.status === statusSel);
         const passaMes = (mesSel === 'all' || f.data.startsWith(mesSel));
         return passaStatus && passaMes;
     });
-
     renderPartyList(festasFiltradas);
 }
 
@@ -259,26 +302,34 @@ filterMonth.addEventListener('change', aplicarFiltrosNaLista);
 function renderPartyList(festas) {
     const listaContainer = document.getElementById('party-list-container');
     listaContainer.innerHTML = '';
-
     if(festas.length === 0) {
-        listaContainer.innerHTML = '<p style="color: var(--text-muted);">Nenhuma festa encontrada para estes filtros.</p>';
+        listaContainer.innerHTML = '<p style="color: var(--text-muted);">Nenhuma festa encontrada.</p>';
         return;
     }
 
     festas.forEach(festa => {
         const [ano, mes, dia] = festa.data.split('-');
         const dataFormatada = `${dia}/${mes}/${ano}`;
+        
         const classeStatus = festa.status === 'concluida' ? 'status-completed' : 'status-scheduled';
         const badgeClass = festa.status === 'concluida' ? 'green' : 'blue';
-        const textoStatus = festa.status === 'concluida' ? 'Concluída' : 'Agendada';
-        const valorExibicao = Number(festa.valor) || 0;
+        const textoStatus = festa.status === 'concluida' ? 'Evento Concluído' : 'Evento Agendado';
+        
+        const total = Number(festa.valor) || 0;
+        const pago = Number(festa.valorPago) || 0;
+        const restante = total - pago;
+        const statusPagamento = restante <= 0 ? 'Já Paga' : 'Pgto Pendente';
+        const badgePagamentoClass = restante <= 0 ? 'green' : 'yellow';
 
         const card = document.createElement('div');
         card.className = `party-card ${classeStatus}`;
         card.innerHTML = `
             <div class="party-header">
                 <h4><i class="ph ph-confetti"></i> ${festa.nome || 'Evento sem nome'}</h4>
-                <span class="badge ${badgeClass}">${textoStatus}</span>
+                <div class="badge-group">
+                    <span class="badge ${badgePagamentoClass}"><i class="ph ph-currency-dollar"></i> ${statusPagamento}</span>
+                    <span class="badge ${badgeClass}">${textoStatus}</span>
+                </div>
             </div>
             <div class="party-body">
                 <div class="party-info-item">
@@ -290,16 +341,12 @@ function renderPartyList(festas) {
                     <span><strong>Equipamento:</strong> ${festa.equipamento || 'N/A'}</span>
                 </div>
                 <div class="party-info-item">
-                    <i class="ph ph-map-pin"></i>
-                    <span><strong>Local:</strong> ${festa.endereco || 'N/A'}</span>
-                </div>
-                <div class="party-info-item">
                     <i class="ph ph-user"></i>
-                    <span><strong>Cliente:</strong> ${festa.cliente || 'N/A'} (${festa.whatsapp || 'Sem Whats'})</span>
+                    <span><strong>Cliente:</strong> ${festa.cliente || 'N/A'}</span>
                 </div>
                 <div class="party-info-item">
-                    <i class="ph ph-currency-circle-dollar"></i>
-                    <span class="party-value-highlight">R$ ${valorExibicao.toFixed(2).replace('.', ',')}</span>
+                    <i class="ph ph-wallet"></i>
+                    <span class="party-value-highlight">Restam: R$ ${(restante > 0 ? restante : 0).toFixed(2).replace('.', ',')}</span>
                 </div>
             </div>
             <div style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 15px; display:flex; gap: 10px;">
@@ -367,6 +414,9 @@ document.getElementById('btn-next-month').addEventListener('click', () => {
     renderCalendar();
 });
 
+// ========================================================
+// MODAL DE DETALHES COM FINANCEIRO
+// ========================================================
 function abrirModalDetalhes(festasDoDia, dataBusca) {
     const container = document.getElementById('modal-dynamic-content');
     container.innerHTML = ''; 
@@ -382,9 +432,29 @@ function abrirModalDetalhes(festasDoDia, dataBusca) {
         let numeroWhats = (festa.whatsapp || '').replace(/\D/g, '');
         const enderecoMapeado = encodeURIComponent(festa.endereco || '');
 
+        const total = Number(festa.valor) || 0;
+        const pago = Number(festa.valorPago) || 0;
+        const restante = total - pago;
+
+        let htmlFinanceiro = `
+            <div class="finance-box">
+                <div class="finance-box-grid">
+                    <div class="finance-item"><span>Total Cobrado</span><strong>R$ ${total.toFixed(2)}</strong></div>
+                    <div class="finance-item pago"><span>Já Pago</span><strong>R$ ${pago.toFixed(2)}</strong></div>
+                    <div class="finance-item restante"><span>Falta Pagar</span><strong>R$ ${(restante > 0 ? restante : 0).toFixed(2)}</strong></div>
+                </div>
+                ${restante > 0 ? `
+                    <div class="add-payment-controls">
+                        <input type="number" step="0.01" id="add-pay-${festa.id}" placeholder="R$ Receber agora">
+                        <button onclick="window.adicionarPagamento('${festa.id}', ${pago})">Salvar Pagamento</button>
+                    </div>
+                ` : `<div style="text-align:center; color: var(--status-done); font-weight:bold;"><i class="ph ph-check-circle"></i> Festa totalmente paga!</div>`}
+            </div>
+        `;
+
         const btnConcluirHtml = festa.status === 'agendada' 
-            ? `<button onclick="window.marcarConcluida('${festa.id}')" class="btn-action finish"><i class="ph ph-check-circle"></i> Concluir</button>`
-            : `<span style="display:flex; align-items:center; gap:5px; color:var(--status-done); font-weight:bold; padding: 10px;"><i class="ph ph-check-circle"></i> Festa Realizada</span>`;
+            ? `<button onclick="window.marcarConcluida('${festa.id}')" class="btn-action finish"><i class="ph ph-check-circle"></i> Marcar Trabalho Realizado</button>`
+            : `<span style="display:flex; align-items:center; gap:5px; color:var(--status-done); font-weight:bold; padding: 10px;"><i class="ph ph-check-circle"></i> Trabalho Realizado</span>`;
 
         bloco.innerHTML = `
             <h3><span><i class="ph ph-confetti"></i> ${festa.nome || 'Evento sem nome'} ${numFesta}</span></h3>
@@ -392,6 +462,8 @@ function abrirModalDetalhes(festasDoDia, dataBusca) {
             <p><i class="ph ph-speaker-hifi"></i> <strong>Equipamento:</strong> ${festa.equipamento || 'N/A'}</p>
             <p><i class="ph ph-map-pin"></i> <strong>Local:</strong> ${festa.endereco || 'N/A'}</p>
             <p><i class="ph ph-user"></i> <strong>Cliente:</strong> ${festa.cliente || 'N/A'}</p>
+            
+            ${htmlFinanceiro}
             
             <div class="modal-actions">
                 <a href="https://waze.com/ul?q=${enderecoMapeado}" target="_blank" class="btn-action waze"><i class="ph ph-navigation-arrow"></i> Waze</a>
@@ -418,28 +490,52 @@ window.addEventListener('click', (e) => {
     if (e.target === editModal) editModal.classList.add('hidden'); 
 });
 
-window.marcarConcluida = async function(id) {
-    if(confirm("Tem certeza que deseja marcar esta festa como concluída?")) {
+window.adicionarPagamento = function(id, valorPagoAtual) {
+    const inputField = document.getElementById(`add-pay-${id}`);
+    const valorAdicional = parseFloat(inputField.value);
+    
+    if (isNaN(valorAdicional) || valorAdicional <= 0) {
+        showToast("Digite um valor numérico maior que zero.", "error");
+        return;
+    }
+    
+    customConfirm(`Confirmar recebimento de R$ ${valorAdicional.toFixed(2)} para esta festa?`, async () => {
+        const novoValorPago = valorPagoAtual + valorAdicional;
+        try {
+            await updateFesta(id, { valorPago: novoValorPago });
+            partyModal.classList.add('hidden');
+            await carregarDadosGlobais();
+            showToast("Pagamento registrado com sucesso!", "success");
+        } catch (e) {
+            showToast("Erro ao registrar pagamento.", "error");
+        }
+    });
+}
+
+window.marcarConcluida = function(id) {
+    customConfirm("Deseja marcar o TRABALHO desta festa como realizado?", async () => {
         try {
             await updateFesta(id, { status: 'concluida' });
             partyModal.classList.add('hidden'); 
             await carregarDadosGlobais(); 
-        } catch (error) {
-            alert("Erro ao atualizar status.");
+            showToast("Festa marcada como concluída!", "success");
+        } catch (error) { 
+            showToast("Erro ao atualizar status.", "error"); 
         }
-    }
+    });
 }
 
-window.excluirFesta = async function(id) {
-    if(confirm("ATENÇÃO: Deseja realmente excluir este agendamento? Esta ação não pode ser desfeita.")) {
+window.excluirFesta = function(id) {
+    customConfirm("ATENÇÃO: Deseja excluir este agendamento? Esta ação não pode ser desfeita.", async () => {
         try {
             await deleteFesta(id);
             partyModal.classList.add('hidden'); 
             await carregarDadosGlobais(); 
-        } catch (error) {
-            alert("Erro ao excluir festa.");
+            showToast("Agendamento excluído com sucesso.", "success");
+        } catch (error) { 
+            showToast("Erro ao excluir festa.", "error"); 
         }
-    }
+    });
 }
 
 window.abrirModalEdicao = function(id) {
@@ -460,6 +556,7 @@ window.abrirModalEdicao = function(id) {
     document.getElementById('edit-client-name').value = festa.cliente || '';
     document.getElementById('edit-client-whatsapp').value = festa.whatsapp || '';
     document.getElementById('edit-party-value').value = festa.valor || '';
+    document.getElementById('edit-party-paid').value = festa.valorPago || 0; 
     document.getElementById('edit-party-staff').value = festa.equipe || '';
 }
 
@@ -479,6 +576,7 @@ if(formEditParty) {
             cliente: document.getElementById('edit-client-name').value,
             whatsapp: document.getElementById('edit-client-whatsapp').value,
             valor: parseFloat(document.getElementById('edit-party-value').value),
+            valorPago: parseFloat(document.getElementById('edit-party-paid').value) || 0,
             equipe: document.getElementById('edit-party-staff').value || ""
         };
 
@@ -489,15 +587,13 @@ if(formEditParty) {
 
         try {
             await updateFesta(idFesta, dadosAtualizados);
-            alert("Festa atualizada com sucesso!");
             editModal.classList.add('hidden');
             await carregarDadosGlobais();
-        } catch (error) {
-            alert("Erro ao atualizar os dados.");
-        } finally {
-            btnSubmit.textContent = originalText;
-            btnSubmit.disabled = false;
-        }
+            showToast("Festa atualizada com sucesso!", "success");
+        } catch (error) { 
+            showToast("Erro ao atualizar os dados.", "error"); 
+        } 
+        finally { btnSubmit.textContent = originalText; btnSubmit.disabled = false; }
     });
 }
 
@@ -517,6 +613,7 @@ if(formAddParty) {
             cliente: document.getElementById('client-name').value,
             whatsapp: document.getElementById('client-whatsapp').value,
             valor: parseFloat(document.getElementById('party-value').value),
+            valorPago: parseFloat(document.getElementById('party-paid').value) || 0, 
             equipe: document.getElementById('party-staff').value || "",
             status: "agendada", 
             criadoEm: new Date().toISOString() 
@@ -529,17 +626,14 @@ if(formAddParty) {
 
         try {
             await addFesta(novaFesta);
-            alert("Festa agendada com sucesso!");
             formAddParty.reset(); 
             document.getElementById('party-end-time').value = ''; 
             await carregarDadosGlobais();
-            
+            showToast("Festa agendada com sucesso!", "success");
             document.querySelector('.menu-btn[data-view="view-calendar"]').click();
-        } catch (error) {
-            alert("Erro ao salvar.");
-        } finally {
-            btnSubmit.innerHTML = textoOriginal;
-            btnSubmit.disabled = false;
-        }
+        } catch (error) { 
+            showToast("Erro ao agendar festa.", "error"); 
+        } 
+        finally { btnSubmit.innerHTML = textoOriginal; btnSubmit.disabled = false; }
     });
 }
