@@ -17,16 +17,12 @@ const partyModal = document.getElementById('modal-party-details');
 const editModal = document.getElementById('modal-edit-party');
 const editEqModal = document.getElementById('modal-edit-equipment');
 
-const closeModalBtn = document.getElementById('close-modal');
-const closeEditModalBtn = document.getElementById('close-modal-edit');
-const closeEditEqModalBtn = document.getElementById('close-modal-edit-eq');
+const filterStatus = document.getElementById('filter-status');
+const filterMonth = document.getElementById('filter-month');
 
 let dataAtualCalendario = new Date();
 let festasGlobais = [];
 let equipamentosGlobais = []; 
-
-const filterStatus = document.getElementById('filter-status');
-const filterMonth = document.getElementById('filter-month');
 
 // ========================================================
 // SISTEMA DE NOTIFICAÇÕES (TOAST) E CONFIRMAÇÕES (MODAL)
@@ -183,6 +179,7 @@ window.gerarContratoWord = async function(idFesta) {
     // Pega EXATAMENTE o endereço que foi digitado na criação da festa
     let enderecoFinalFesta = festa.endereco || '__________________';
 
+    // REMOVIDA A IMAGEM COMO SOLICITADO
     const conteudoWordHtml = `
         <div style="font-family: Arial, sans-serif; font-size: 11pt; text-align: justify; line-height: 1.5;">
             <p style="text-align: center; font-weight: bold; font-size: 14pt;">
@@ -255,13 +252,13 @@ window.gerarContratoWord = async function(idFesta) {
             
             <p>Volta Redonda, ${dataAssinatura}.</p>
             
-            <br><br><br>
+            <br><br><br><br>
             <div style="text-align: center;">
                 <p style="margin: 0;">_____________________________________________</p>
                 <p style="font-weight: bold; margin: 0;">CONTRATADO</p>
                 <p style="margin: 0;">(Maby eventos)</p>
             </div>
-            <br><br><br>
+            <br><br><br><br>
             
             <div style="text-align: center;">
                 <p style="margin: 0;">_____________________________________________</p>
@@ -321,7 +318,6 @@ window.gerarRelatorioWord = function() {
             equips.forEach(eq => {
                 usoEquipamentos[eq] = (usoEquipamentos[eq] || 0) + 1;
                 
-                // Calcula o valor real cobrado pelo equipamento (Valor Sugerido/Cobrado menos Desconto individual)
                 let eqValorCobrado = 0;
                 if(detalhes[eq]) {
                     let val = parseFloat(detalhes[eq].valor) || 0;
@@ -502,43 +498,41 @@ menuButtons.forEach(btn => {
         btn.classList.add('active');
         sections.forEach(s => s.classList.add('hidden'));
         document.getElementById(target).classList.remove('hidden');
-        // window.scrollTo({top: 0, behavior: 'smooth'});
     });
 });
 
-window.calcTime = function(prefix) {
-    const startInput = document.getElementById(`${prefix}-start-time`);
-    const hoursInput = document.getElementById(`${prefix}-hours`);
-    const endInput = document.getElementById(`${prefix}-end-time`);
-    
-    // Pega o valor da pausa (se a checkbox estiver marcada)
-    const cbPausa = document.getElementById(`${prefix}-has-pause`);
-    const temPausa = cbPausa ? cbPausa.checked : false;
-    const horasPausa = temPausa ? (parseFloat(document.getElementById(`${prefix}-pause-hours`)?.value) || 0) : 0;
+function setupCalculoHoras(inputIdStart, inputIdHours, inputIdEnd) {
+    const startInput = document.getElementById(inputIdStart);
+    const hoursInput = document.getElementById(inputIdHours);
+    const endInput = document.getElementById(inputIdEnd);
 
-    if (startInput && hoursInput && startInput.value && hoursInput.value) {
-        const [hours, minutes] = startInput.value.split(':').map(Number);
-        
-        // Duração total de tempo que a equipe ficará no local (Horas de trabalho + Horas de pausa)
-        const durationTrabalho = parseFloat(hoursInput.value) || 0;
-        const durationTotal = durationTrabalho + horasPausa;
-        
-        const durationHours = Math.floor(durationTotal);
-        const durationMinutes = Math.round((durationTotal - durationHours) * 60);
+    function calc() {
+        if (startInput && hoursInput && startInput.value && hoursInput.value) {
+            const [hours, minutes] = startInput.value.split(':').map(Number);
+            const duration = parseFloat(hoursInput.value);
+            const durationHours = Math.floor(duration);
+            const durationMinutes = Math.round((duration - durationHours) * 60);
 
-        let endHours = hours + durationHours;
-        let endMinutes = minutes + durationMinutes;
+            let endHours = hours + durationHours;
+            let endMinutes = minutes + durationMinutes;
 
-        if (endMinutes >= 60) {
-            endHours += Math.floor(endMinutes / 60);
-            endMinutes = endMinutes % 60;
+            if (endMinutes >= 60) {
+                endHours += Math.floor(endMinutes / 60);
+                endMinutes = endMinutes % 60;
+            }
+            endHours = endHours % 24; 
+            if(endInput) endInput.value = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+        } else if (endInput) { 
+            endInput.value = ''; 
         }
-        endHours = endHours % 24; 
-        if(endInput) endInput.value = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-    } else if (endInput) { 
-        endInput.value = ''; 
+    }
+    if (startInput && hoursInput) {
+        startInput.addEventListener('input', calc);
+        hoursInput.addEventListener('input', calc);
     }
 }
+setupCalculoHoras('party-start-time', 'party-hours', 'party-end-time');
+setupCalculoHoras('edit-party-start-time', 'edit-party-hours', 'edit-party-end-time');
 
 // ========================================================
 // CÁLCULO DE VALOR DE FESTA COM DESCONTO E PAUSA
@@ -596,7 +590,6 @@ window.calcTotalNovo = function(prefix) {
         }
     });
 
-    // Adiciona o valor cobrado extra pela pausa (se houver)
     const cbPausa = document.getElementById(`${prefix}-has-pause`);
     if (cbPausa && cbPausa.checked) {
         const custoPausa = parseFloat(document.getElementById(`${prefix}-pause-cost`)?.value) || 0;
@@ -944,7 +937,6 @@ window.agendarFestaPeloCalendario = function(dataBusca) {
     if(menuBtn) menuBtn.click();
     const pDate = document.getElementById('party-date');
     if(pDate) pDate.value = dataBusca;
-    // window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
 function abrirModalDetalhes(festasDoDia, dataBusca) {
@@ -1000,7 +992,6 @@ function abrirModalDetalhes(festasDoDia, dataBusca) {
                 ? `<button onclick="window.marcarConcluida('${festa.id}')" class="btn-action finish"><i class="ph ph-check-circle"></i> Marcar Trabalho Realizado</button>`
                 : `<span style="display:flex; align-items:center; gap:5px; color:var(--status-done); font-weight:bold; padding: 10px;"><i class="ph ph-check-circle"></i> Trabalho Realizado</span>`;
 
-            // Tratamento visual para as horas e pausas
             let textoHoras = `${festa.horas}h de serviço`;
             if(festa.temPausa && festa.horasPausa > 0) {
                 textoHoras += ` + ${festa.horasPausa}h de pausa`;
@@ -1115,7 +1106,6 @@ window.abrirModalEdicao = function(id) {
     document.getElementById('edit-party-hours').value = festa.horas || '';
     document.getElementById('edit-party-end-time').value = festa.horaFim || '';
     
-    // Tratamento da pausa na edição
     const cbPausa = document.getElementById('edit-party-has-pause');
     const inputPausaHoras = document.getElementById('edit-party-pause-hours');
     const inputPausaCusto = document.getElementById('edit-party-pause-cost');
