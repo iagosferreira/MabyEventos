@@ -170,24 +170,58 @@
                                 <input type="date" id="party-date" required>
                             </div>
                         </div>
+                        
                         <div class="form-row">
                             <div class="input-group">
                                 <label>Início do Trabalho</label>
-                                <input type="time" id="party-start-time" required>
+                                <input type="time" id="party-start-time" oninput="window.calcTime('party')" required>
                             </div>
                             <div class="input-group">
-                                <label>Qtd. de Horas</label>
-                                <input type="number" id="party-hours" min="1" step="0.5" placeholder="Ex: 4" required>
+                                <label>Qtd. de Horas (Trabalho)</label>
+                                <input type="number" id="party-hours" min="1" step="0.5" placeholder="Ex: 4" oninput="window.calcTime('party')" required>
                             </div>
                             <div class="input-group">
                                 <label>Fim do Trabalho</label>
                                 <input type="time" id="party-end-time" readonly class="input-disabled" title="Calculado automaticamente">
                             </div>
                         </div>
+
+                        <div class="form-row" style="background-color: var(--bg-color); padding: 15px; border-radius: 12px; margin-top: 10px;">
+                            <div class="input-group full-width" style="margin-bottom: 0;">
+                                <label style="color: var(--status-many);"><i class="ph ph-pause-circle"></i> Pausa / Parada no Evento?</label>
+                                <div class="checkbox-item-wrapper" style="padding: 10px; background: var(--surface-color);">
+                                    <label class="checkbox-item" style="font-weight: normal;">
+                                        <input type="checkbox" id="party-has-pause" onchange="window.togglePauseDetails('party')">
+                                        Sim, adicionar tempo de pausa
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row hidden" id="party-pause-details" style="background-color: rgba(255, 193, 7, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--status-many);">
+                            <div class="input-group">
+                                <label>Tempo de Pausa (Horas)</label>
+                                <input type="number" id="party-pause-hours" min="0" step="0.5" value="0" placeholder="Ex: 1" oninput="window.calcTime('party')">
+                                <p class="help-text">Irá atrasar o Fim do Trabalho</p>
+                            </div>
+                            <div class="input-group">
+                                <label>Cobrar pela pausa? (R$)</label>
+                                <input type="number" id="party-pause-cost" min="0" step="0.01" value="0" placeholder="0,00" oninput="window.calcTotalNovo('party')">
+                                <p class="help-text">Soma ao valor total final</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row" style="margin-top: 15px;">
+                            <div class="input-group full-width">
+                                <label><i class="ph ph-text-align-left"></i> Observações da Festa</label>
+                                <textarea id="party-obs" rows="3" placeholder="Detalhes da fantasia, aniversariante, referências ou exigências do cliente..."></textarea>
+                            </div>
+                        </div>
+
                     </div>
 
                     <div class="form-section-box">
-                        <h3 class="form-section-title"><i class="ph ph-user"></i> Dados do Contratante</h3>
+                        <h3 class="form-section-title"><i class="ph ph-user"></i> Dados do Contratante (Para Contrato)</h3>
                         <div class="form-row">
                             <div class="input-group full-width">
                                 <label>Nome Completo</label>
@@ -246,7 +280,7 @@
                                 </div>
                             </div>
                             <div class="input-group financial-input">
-                                <label>VALOR TOTAL (Calculado)</label>
+                                <label>VALOR TOTAL FINAL</label>
                                 <input type="number" step="0.01" id="party-value" placeholder="0,00" readonly class="input-disabled" style="color: var(--accent-color); font-size: 20px;">
                             </div>
                         </div>
@@ -354,9 +388,8 @@
                     </div>
                     <div class="form-row">
                         <div class="input-group highlight-input">
-                            <label>Equipamentos Contratados</label>
+                            <label>Equipamentos</label>
                             <div id="edit-party-eq-container" class="checkbox-container">Carregando equipamentos...</div>
-                            <p class="help-text">Selecione e configure os valores</p>
                         </div>
                         <div class="input-group">
                             <label>Data</label>
@@ -366,15 +399,45 @@
                     <div class="form-row">
                         <div class="input-group">
                             <label>Início do Trabalho</label>
-                            <input type="time" id="edit-party-start-time" required>
+                            <input type="time" id="edit-party-start-time" oninput="window.calcTime('edit-party')" required>
                         </div>
                         <div class="input-group">
                             <label>Qtd. de Horas</label>
-                            <input type="number" id="edit-party-hours" min="1" step="0.5" required>
+                            <input type="number" id="edit-party-hours" min="1" step="0.5" oninput="window.calcTime('edit-party')" required>
                         </div>
                         <div class="input-group">
                             <label>Fim do Trabalho</label>
                             <input type="time" id="edit-party-end-time" readonly class="input-disabled">
+                        </div>
+                    </div>
+
+                    <div class="form-row" style="background-color: var(--bg-color); padding: 15px; border-radius: 12px; margin-top: 10px;">
+                        <div class="input-group full-width" style="margin-bottom: 0;">
+                            <label style="color: var(--status-many);"><i class="ph ph-pause-circle"></i> Pausa / Parada no Evento?</label>
+                            <div class="checkbox-item-wrapper" style="padding: 10px; background: var(--surface-color);">
+                                <label class="checkbox-item" style="font-weight: normal;">
+                                    <input type="checkbox" id="edit-party-has-pause" onchange="window.togglePauseDetails('edit-party')">
+                                    Sim, tem tempo de pausa
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row hidden" id="edit-party-pause-details" style="background-color: rgba(255, 193, 7, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--status-many);">
+                        <div class="input-group">
+                            <label>Tempo de Pausa (Horas)</label>
+                            <input type="number" id="edit-party-pause-hours" min="0" step="0.5" value="0" oninput="window.calcTime('edit-party')">
+                        </div>
+                        <div class="input-group">
+                            <label>Cobrar pela pausa? (R$)</label>
+                            <input type="number" id="edit-party-pause-cost" min="0" step="0.01" value="0" oninput="window.calcTotalNovo('edit-party')">
+                        </div>
+                    </div>
+
+                    <div class="form-row" style="margin-top: 15px;">
+                        <div class="input-group full-width">
+                            <label><i class="ph ph-text-align-left"></i> Observações</label>
+                            <textarea id="edit-party-obs" rows="3" placeholder="Detalhes extras..."></textarea>
                         </div>
                     </div>
                 </div>

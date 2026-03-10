@@ -17,6 +17,10 @@ const partyModal = document.getElementById('modal-party-details');
 const editModal = document.getElementById('modal-edit-party');
 const editEqModal = document.getElementById('modal-edit-equipment');
 
+const closeModalBtn = document.getElementById('close-modal');
+const closeEditModalBtn = document.getElementById('close-modal-edit');
+const closeEditEqModalBtn = document.getElementById('close-modal-edit-eq');
+
 let dataAtualCalendario = new Date();
 let festasGlobais = [];
 let equipamentosGlobais = []; 
@@ -148,7 +152,7 @@ window.gerarContratoWord = async function(idFesta) {
     let prefixoRua = /^rua\b|^av\b|^avenida\b|^rodovia\b|^estrada\b|^praça\b|^travessa\b/i.test(ruaContratante) ? "" : "Rua ";
     let cpfFormatado = formatarCPFParaContrato(festa.cpf);
 
-    let equipArray = (festa.equipamento || "").split(',').map(e => e.trim().toLowerCase());
+    let equipArray = (festa.equipamento || "").split(',').map(e => e.trim().toLowerCase()).filter(e => e !== "");
     let txtEquips = [];
     
     let temAereo = equipArray.some(e => e.includes('aéreo') || e.includes('aereo'));
@@ -173,29 +177,12 @@ window.gerarContratoWord = async function(idFesta) {
         txtEquips.push(`de locação e operação dos seguintes equipamentos: ${outros.join(', ')}`);
     }
 
-    let textoEquipamentoFinal = txtEquips.join(" E ");
+    let textoEquipamentoFinal = txtEquips.join(" e ");
     if(textoEquipamentoFinal === "") textoEquipamentoFinal = "de prestação de serviços para o evento";
 
-    // Busca Endereço
-    let enderecoFinalFesta = festa.endereco || '';
-    if (enderecoFinalFesta && !enderecoFinalFesta.includes(',') && !enderecoFinalFesta.toLowerCase().includes('rua') && !enderecoFinalFesta.toLowerCase().includes('av ')) {
-        showToast("Buscando endereço real do salão na internet...", "info");
-        try {
-            const latVR = -22.5230;
-            const lonVR = -44.1041;
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(enderecoFinalFesta)}&format=json&limit=1&countrycodes=br&lat=${latVR}&lon=${lonVR}`);
-            const data = await response.json();
-            if (data && data.length > 0) {
-                let displayParts = data[0].display_name.split(',');
-                let enderecoLimpo = displayParts.slice(0, 4).join(',').trim();
-                enderecoFinalFesta = `${festa.endereco}, ${enderecoLimpo}`;
-            }
-        } catch (error) {
-            console.log("Erro na API de mapas", error);
-        }
-    }
+    // Pega EXATAMENTE o endereço que foi digitado na criação da festa
+    let enderecoFinalFesta = festa.endereco || '__________________';
 
-    // Retirada a imagem base64 a pedido do usuário. Apenas linhas para assinar.
     const conteudoWordHtml = `
         <div style="font-family: Arial, sans-serif; font-size: 11pt; text-align: justify; line-height: 1.5;">
             <p style="text-align: center; font-weight: bold; font-size: 14pt;">
@@ -306,7 +293,6 @@ window.gerarRelatorioWord = function() {
     const anoAtual = dataAtual.getFullYear();
     const prefixoMes = `${anoAtual}-${mesAtual}`;
 
-    // Filtra as festas pela data de CRIAÇÃO (quando a festa foi agendada no sistema)
     const festasDoMes = festasGlobais.filter(f => {
         let dataRef = f.criadoEm || f.data;
         return dataRef && dataRef.startsWith(prefixoMes);
@@ -326,14 +312,32 @@ window.gerarRelatorioWord = function() {
             horasTrabalhadas += parseFloat(f.horas) || 0;
         }
         
-        // Conta APENAS os valores já pagos
         valorTotalRecebidoMes += parseFloat(f.valorPago) || 0;
 
+        let detalhes = f.detalhesEquipamentos || {};
+
         if (f.equipamento) {
-            const equips = f.equipamento.split(',').map(e => e.trim());
+            const equips = f.equipamento.split(',').map(e => e.trim()).filter(e => e !== "");
             equips.forEach(eq => {
                 usoEquipamentos[eq] = (usoEquipamentos[eq] || 0) + 1;
-                rendaEquipamentos[eq] = (rendaEquipamentos[eq] || 0) + (parseFloat(f.valorPago) || 0);
+                
+                // Calcula o valor real cobrado pelo equipamento (Valor Sugerido/Cobrado menos Desconto individual)
+                let eqValorCobrado = 0;
+                if(detalhes[eq]) {
+                    let val = parseFloat(detalhes[eq].valor) || 0;
+                    let descVal = parseFloat(detalhes[eq].desconto) || 0;
+                    let descType = detalhes[eq].tipoDesconto || 'R$';
+                    
+                    let finalEqVal = val;
+                    if (descType === '%') {
+                        finalEqVal -= val * (descVal / 100);
+                    } else {
+                        finalEqVal -= descVal;
+                    }
+                    eqValorCobrado = finalEqVal > 0 ? finalEqVal : 0;
+                }
+                
+                rendaEquipamentos[eq] = (rendaEquipamentos[eq] || 0) + eqValorCobrado;
             });
         }
     });
@@ -348,8 +352,10 @@ window.gerarRelatorioWord = function() {
     }
 
     let htmlRendaEquips = "";
-    for (let eq in rendaEquipamentos) {
-        htmlRendaEquips += `<li><strong>${eq}:</strong> Gerou R$ ${rendaEquipamentos[eq].toFixed(2).replace('.', ',')} (valor já recebido) neste mês.</li>`;
+    for (let eq in usoEquipamentos) {
+        let qtd = usoEquipamentos[eq];
+        let renda = rendaEquipamentos[eq] || 0;
+        htmlRendaEquips += `<li><strong>${eq}:</strong> Contratado ${qtd} vez(es) - Total cobrado: R$ ${renda.toFixed(2).replace('.', ',')}</li>`;
     }
 
     const mesesExtenso = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -374,8 +380,8 @@ window.gerarRelatorioWord = function() {
             <h2>Análise de Equipamentos</h2>
             <p><strong>Equipamento Mais Requisitado:</strong> ${equipamentoMaisUsado} (${maxUso} locações neste mês)</p>
             
-            <h3>Renda Recebida por Equipamento:</h3>
-            <p style="font-size: 10pt; color: #666;">(Soma dos valores já pagos nas festas em que o equipamento foi contratado)</p>
+            <h3>Renda e Quantidade por Equipamento:</h3>
+            <p style="font-size: 10pt; color: #666;">(Valor total cobrado por cada equipamento nas festas contratadas)</p>
             <ul>
                 ${htmlRendaEquips || '<li>Nenhum equipamento registrado neste mês.</li>'}
             </ul>
@@ -401,7 +407,7 @@ if(btnGerarRelatorio) {
 
 
 // ========================================================
-// MÁSCARAS DE INPUTS (CPF, etc)
+// MÁSCARAS DE INPUTS E CEPS
 // ========================================================
 function aplicarMascaraCPF(input) {
     let value = input.value.replace(/\D/g, '');
@@ -417,10 +423,6 @@ if(inputCpf) inputCpf.addEventListener('input', function() { aplicarMascaraCPF(t
 const editInputCpf = document.getElementById('edit-client-cpf');
 if(editInputCpf) editInputCpf.addEventListener('input', function() { aplicarMascaraCPF(this); });
 
-
-// ========================================================
-// API DE CEP AUTOMÁTICO
-// ========================================================
 function setupCep(cepId, ruaId, bairroId, cidadeId, estadoId) {
     const cepInput = document.getElementById(cepId);
     if(cepInput) {
@@ -445,7 +447,7 @@ setupCep('client-cep', 'client-rua', 'client-bairro', 'client-cidade', 'client-e
 setupCep('edit-client-cep', 'edit-client-rua', 'edit-client-bairro', 'edit-client-cidade', 'edit-client-estado');
 
 // ========================================================
-// SISTEMA DE LOGIN REAL (FIREBASE AUTH)
+// SISTEMA DE LOGIN REAL E NAVEGAÇÃO
 // ========================================================
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -500,46 +502,63 @@ menuButtons.forEach(btn => {
         btn.classList.add('active');
         sections.forEach(s => s.classList.add('hidden'));
         document.getElementById(target).classList.remove('hidden');
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        // window.scrollTo({top: 0, behavior: 'smooth'});
     });
 });
 
-function setupCalculoHoras(inputIdStart, inputIdHours, inputIdEnd) {
-    const startInput = document.getElementById(inputIdStart);
-    const hoursInput = document.getElementById(inputIdHours);
-    const endInput = document.getElementById(inputIdEnd);
+window.calcTime = function(prefix) {
+    const startInput = document.getElementById(`${prefix}-start-time`);
+    const hoursInput = document.getElementById(`${prefix}-hours`);
+    const endInput = document.getElementById(`${prefix}-end-time`);
+    
+    // Pega o valor da pausa (se a checkbox estiver marcada)
+    const cbPausa = document.getElementById(`${prefix}-has-pause`);
+    const temPausa = cbPausa ? cbPausa.checked : false;
+    const horasPausa = temPausa ? (parseFloat(document.getElementById(`${prefix}-pause-hours`)?.value) || 0) : 0;
 
-    function calc() {
-        if (startInput && hoursInput && startInput.value && hoursInput.value) {
-            const [hours, minutes] = startInput.value.split(':').map(Number);
-            const duration = parseFloat(hoursInput.value);
-            const durationHours = Math.floor(duration);
-            const durationMinutes = Math.round((duration - durationHours) * 60);
+    if (startInput && hoursInput && startInput.value && hoursInput.value) {
+        const [hours, minutes] = startInput.value.split(':').map(Number);
+        
+        // Duração total de tempo que a equipe ficará no local (Horas de trabalho + Horas de pausa)
+        const durationTrabalho = parseFloat(hoursInput.value) || 0;
+        const durationTotal = durationTrabalho + horasPausa;
+        
+        const durationHours = Math.floor(durationTotal);
+        const durationMinutes = Math.round((durationTotal - durationHours) * 60);
 
-            let endHours = hours + durationHours;
-            let endMinutes = minutes + durationMinutes;
+        let endHours = hours + durationHours;
+        let endMinutes = minutes + durationMinutes;
 
-            if (endMinutes >= 60) {
-                endHours += Math.floor(endMinutes / 60);
-                endMinutes = endMinutes % 60;
-            }
-            endHours = endHours % 24; 
-            if(endInput) endInput.value = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-        } else if (endInput) { 
-            endInput.value = ''; 
+        if (endMinutes >= 60) {
+            endHours += Math.floor(endMinutes / 60);
+            endMinutes = endMinutes % 60;
         }
-    }
-    if (startInput && hoursInput) {
-        startInput.addEventListener('input', calc);
-        hoursInput.addEventListener('input', calc);
+        endHours = endHours % 24; 
+        if(endInput) endInput.value = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+    } else if (endInput) { 
+        endInput.value = ''; 
     }
 }
-setupCalculoHoras('party-start-time', 'party-hours', 'party-end-time');
-setupCalculoHoras('edit-party-start-time', 'edit-party-hours', 'edit-party-end-time');
 
 // ========================================================
-// CÁLCULO DE VALOR DE FESTA COM DESCONTO % E R$
+// CÁLCULO DE VALOR DE FESTA COM DESCONTO E PAUSA
 // ========================================================
+window.togglePauseDetails = function(prefix) {
+    const checkbox = document.getElementById(`${prefix}-has-pause`);
+    const detailsDiv = document.getElementById(`${prefix}-pause-details`);
+    if(checkbox && checkbox.checked) {
+        if(detailsDiv) detailsDiv.classList.remove('hidden');
+    } else {
+        if(detailsDiv) detailsDiv.classList.add('hidden');
+        const inputHours = document.getElementById(`${prefix}-pause-hours`);
+        const inputCost = document.getElementById(`${prefix}-pause-cost`);
+        if(inputHours) inputHours.value = '0';
+        if(inputCost) inputCost.value = '0';
+    }
+    window.calcTime(prefix);
+    window.calcTotalNovo(prefix);
+}
+
 window.toggleEqDetails = function(checkbox) {
     const wrapper = checkbox.closest('.checkbox-item-wrapper');
     const details = wrapper.querySelector('.eq-details');
@@ -564,7 +583,7 @@ window.calcTotalNovo = function(prefix) {
         if (cb && cb.checked) {
             const val = parseFloat(w.querySelector('.eq-valor').value) || 0;
             const descVal = parseFloat(w.querySelector('.eq-desc').value) || 0;
-            const descType = w.querySelector('.eq-desc-type').value; // 'R$' ou '%'
+            const descType = w.querySelector('.eq-desc-type').value; 
             
             let finalEqVal = val;
             if (descType === '%') {
@@ -577,8 +596,15 @@ window.calcTotalNovo = function(prefix) {
         }
     });
 
+    // Adiciona o valor cobrado extra pela pausa (se houver)
+    const cbPausa = document.getElementById(`${prefix}-has-pause`);
+    if (cbPausa && cbPausa.checked) {
+        const custoPausa = parseFloat(document.getElementById(`${prefix}-pause-cost`)?.value) || 0;
+        total += custoPausa;
+    }
+
     const globalDescVal = parseFloat(document.getElementById(`${prefix}-desconto-global`).value) || 0;
-    const globalDescType = document.getElementById(`${prefix}-desc-type`).value; // 'R$' ou '%'
+    const globalDescType = document.getElementById(`${prefix}-desc-type`).value; 
     
     if (globalDescType === '%') {
         total -= total * (globalDescVal / 100);
@@ -591,7 +617,6 @@ window.calcTotalNovo = function(prefix) {
     const vInput = document.getElementById(`${prefix}-value`);
     if(vInput) vInput.value = total.toFixed(2);
 }
-
 
 // ========================================================
 // EQUIPAMENTOS E CHECKBOXES
@@ -675,7 +700,6 @@ window.excluirEquipamento = function(id) {
     });
 }
 
-// LOGICA PARA EDITAR EQUIPAMENTO
 window.abrirModalEdicaoEquipamento = function(id) {
     const eq = equipamentosGlobais.find(e => e.id === id);
     if(!eq || !editEqModal) return;
@@ -920,12 +944,9 @@ window.agendarFestaPeloCalendario = function(dataBusca) {
     if(menuBtn) menuBtn.click();
     const pDate = document.getElementById('party-date');
     if(pDate) pDate.value = dataBusca;
-    window.scrollTo({top: 0, behavior: 'smooth'});
+    // window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
-// ========================================================
-// MODAL DE DETALHES COM BOTÃO DE EXPORTAR WORD
-// ========================================================
 function abrirModalDetalhes(festasDoDia, dataBusca) {
     const container = document.getElementById('modal-dynamic-content');
     if(!container || !partyModal) return;
@@ -979,24 +1000,32 @@ function abrirModalDetalhes(festasDoDia, dataBusca) {
                 ? `<button onclick="window.marcarConcluida('${festa.id}')" class="btn-action finish"><i class="ph ph-check-circle"></i> Marcar Trabalho Realizado</button>`
                 : `<span style="display:flex; align-items:center; gap:5px; color:var(--status-done); font-weight:bold; padding: 10px;"><i class="ph ph-check-circle"></i> Trabalho Realizado</span>`;
 
+            // Tratamento visual para as horas e pausas
+            let textoHoras = `${festa.horas}h de serviço`;
+            if(festa.temPausa && festa.horasPausa > 0) {
+                textoHoras += ` + ${festa.horasPausa}h de pausa`;
+            }
+
             bloco.innerHTML = `
                 <h3><span><i class="ph ph-confetti"></i> ${festa.nome || 'Evento sem nome'} ${numFesta}</span></h3>
-                <p><i class="ph ph-clock"></i> <strong>Horário:</strong> ${festa.horaInicio || '--:--'} às ${festa.horaFim || '--:--'}</p>
+                <p><i class="ph ph-clock"></i> <strong>Horário:</strong> ${festa.horaInicio || '--:--'} às ${festa.horaFim || '--:--'} <span style="font-size:12px; color:var(--text-muted);">(${textoHoras})</span></p>
                 <p><i class="ph ph-speaker-hifi"></i> <strong>Equipamentos:</strong> ${festa.equipamento || 'N/A'}</p>
                 <p><i class="ph ph-map-pin"></i> <strong>Local do Evento:</strong> ${festa.endereco || 'N/A'}</p>
+                
+                ${festa.observacoes ? `<div style="background-color: var(--bg-color); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 14px; border-left: 3px solid var(--accent-color);"><i class="ph ph-text-align-left" style="color:var(--accent-color);"></i> <strong>Obs:</strong> ${festa.observacoes}</div>` : ''}
                 
                 <hr style="border: 0; border-top: 1px dashed var(--border-color); margin: 15px 0;">
                 
                 <p><i class="ph ph-user"></i> <strong>Contratante:</strong> ${festa.cliente || 'N/A'} (CPF: ${festa.cpf || 'Não info.'})</p>
                 <p><i class="ph ph-map-pin"></i> <strong>Endereço Cliente:</strong> ${festa.rua || 'N/A'}, ${festa.numero || 'S/N'} - ${festa.bairro || ''}</p>
-                
+                <p><i class="ph ph-users"></i> <strong>Equipe:</strong> ${festa.equipe || 'Não informada'}</p>
+
                 ${htmlFinanceiro}
                 
                 <div class="modal-actions">
                     <a href="https://waze.com/ul?q=${enderecoMapeado}" target="_blank" class="btn-action waze"><i class="ph ph-navigation-arrow"></i> Waze</a>
                     <a href="https://www.google.com/maps/search/?api=1&query=${enderecoMapeado}" target="_blank" class="btn-action maps"><i class="ph ph-map-pin"></i> Maps</a>
-                    <a href="https://wa.me/55${numeroWhats}" target="_blank" class="btn-action whats"><i class="ph ph-whatsapp-logo"></i> Whats</a>
-                    
+                    <a href="https://wa.me/55${numeroWhats}" target="_blank" class="btn-action whats"><i class="ph ph-whatsapp-logo"></i> Cliente</a>
                     <button onclick="window.gerarContratoWord('${festa.id}')" class="btn-action word"><i class="ph ph-file-doc"></i> Baixar Contrato</button>
                 </div>
                 
@@ -1021,6 +1050,16 @@ function abrirModalDetalhes(festasDoDia, dataBusca) {
 
     partyModal.classList.remove('hidden');
 }
+
+if(closeModalBtn) closeModalBtn.addEventListener('click', () => { partyModal.classList.add('hidden'); });
+if(closeEditModalBtn) closeEditModalBtn.addEventListener('click', () => { editModal.classList.add('hidden'); });
+if(closeEditEqModalBtn) closeEditEqModalBtn.addEventListener('click', () => { editEqModal.classList.add('hidden'); });
+
+window.addEventListener('click', (e) => { 
+    if (partyModal && e.target === partyModal) partyModal.classList.add('hidden');
+    if (editModal && e.target === editModal) editModal.classList.add('hidden');
+    if (editEqModal && e.target === editEqModal) editEqModal.classList.add('hidden');
+});
 
 window.adicionarPagamento = function(id, valorPagoAtual) {
     const inputField = document.getElementById(`add-pay-${id}`);
@@ -1076,6 +1115,27 @@ window.abrirModalEdicao = function(id) {
     document.getElementById('edit-party-hours').value = festa.horas || '';
     document.getElementById('edit-party-end-time').value = festa.horaFim || '';
     
+    // Tratamento da pausa na edição
+    const cbPausa = document.getElementById('edit-party-has-pause');
+    const inputPausaHoras = document.getElementById('edit-party-pause-hours');
+    const inputPausaCusto = document.getElementById('edit-party-pause-cost');
+    const divPausaDetails = document.getElementById('edit-party-pause-details');
+    
+    if(festa.temPausa) {
+        if(cbPausa) cbPausa.checked = true;
+        if(inputPausaHoras) inputPausaHoras.value = festa.horasPausa || 0;
+        if(inputPausaCusto) inputPausaCusto.value = festa.valorPausa || 0;
+        if(divPausaDetails) divPausaDetails.classList.remove('hidden');
+    } else {
+        if(cbPausa) cbPausa.checked = false;
+        if(inputPausaHoras) inputPausaHoras.value = 0;
+        if(inputPausaCusto) inputPausaCusto.value = 0;
+        if(divPausaDetails) divPausaDetails.classList.add('hidden');
+    }
+
+    const obsInput = document.getElementById('edit-party-obs');
+    if(obsInput) obsInput.value = festa.observacoes || '';
+    
     document.getElementById('edit-client-name').value = festa.cliente || '';
     document.getElementById('edit-client-cpf').value = festa.cpf || '';
     document.getElementById('edit-client-whatsapp').value = festa.whatsapp || '';
@@ -1086,7 +1146,6 @@ window.abrirModalEdicao = function(id) {
     document.getElementById('edit-client-cidade').value = festa.cidade || '';
     document.getElementById('edit-client-estado').value = festa.estado || '';
 
-    // Carrega descontos globais
     const descGlobalInput = document.getElementById('edit-party-desconto-global');
     const descGlobalType = document.getElementById('edit-party-desc-type');
     if(descGlobalInput) descGlobalInput.value = festa.descontoGlobal || 0;
@@ -1144,6 +1203,9 @@ if(formEditParty) {
 
         if (equipamentosSelecionados.length === 0) { showToast("Selecione pelo menos um equipamento.", "error"); return; }
 
+        const cbPausa = document.getElementById('edit-party-has-pause');
+        const temPausa = cbPausa ? cbPausa.checked : false;
+
         const idFesta = document.getElementById('edit-party-id').value;
         const dadosAtualizados = {
             nome: document.getElementById('edit-party-name').value,
@@ -1155,6 +1217,11 @@ if(formEditParty) {
             horas: document.getElementById('edit-party-hours').value,
             horaFim: document.getElementById('edit-party-end-time').value,
             
+            temPausa: temPausa,
+            horasPausa: temPausa ? (parseFloat(document.getElementById('edit-party-pause-hours').value) || 0) : 0,
+            valorPausa: temPausa ? (parseFloat(document.getElementById('edit-party-pause-cost').value) || 0) : 0,
+            observacoes: document.getElementById('edit-party-obs').value || "",
+
             cliente: document.getElementById('edit-client-name').value,
             cpf: document.getElementById('edit-client-cpf').value,
             whatsapp: document.getElementById('edit-client-whatsapp').value,
@@ -1211,6 +1278,9 @@ if(formAddParty) {
 
         if (equipamentosSelecionados.length === 0) { showToast("Selecione pelo menos um equipamento.", "error"); return; }
 
+        const cbPausa = document.getElementById('party-has-pause');
+        const temPausa = cbPausa ? cbPausa.checked : false;
+
         const novaFesta = {
             nome: document.getElementById('party-name').value,
             endereco: document.getElementById('party-address').value,
@@ -1221,6 +1291,11 @@ if(formAddParty) {
             horas: document.getElementById('party-hours').value,
             horaFim: document.getElementById('party-end-time').value,
             
+            temPausa: temPausa,
+            horasPausa: temPausa ? (parseFloat(document.getElementById('party-pause-hours').value) || 0) : 0,
+            valorPausa: temPausa ? (parseFloat(document.getElementById('party-pause-cost').value) || 0) : 0,
+            observacoes: document.getElementById('party-obs').value || "",
+
             cliente: document.getElementById('client-name').value,
             cpf: document.getElementById('client-cpf').value,
             whatsapp: document.getElementById('client-whatsapp').value,
@@ -1237,7 +1312,7 @@ if(formAddParty) {
             valorPago: parseFloat(document.getElementById('party-paid').value) || 0, 
             equipe: document.getElementById('party-staff').value || "",
             status: "agendada",
-            criadoEm: new Date().toISOString() // Isso garante que o relatório mensal use o mês que o evento foi FECHADO/CRIADO
+            criadoEm: new Date().toISOString() 
         };
 
         const btnSubmit = formAddParty.querySelector('button[type="submit"]');
@@ -1251,6 +1326,8 @@ if(formAddParty) {
             document.getElementById('party-end-time').value = ''; 
             
             document.querySelectorAll('#party-eq-container .eq-details').forEach(div => div.classList.add('hidden'));
+            const pDetails = document.getElementById('party-pause-details');
+            if(pDetails) pDetails.classList.add('hidden');
 
             await carregarDadosGlobais();
             showToast("Festa agendada com sucesso!", "success");
