@@ -6,6 +6,9 @@
     <title>MabyEventos - Gestão</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body data-theme="dark">
 
@@ -71,6 +74,12 @@
             </div>
         </section>
 
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+            <button id="btn-gerar-relatorio" class="btn-primary" style="max-width: 280px; background-color: var(--status-many); color: #000;">
+                <i class="ph ph-chart-bar"></i> Baixar Relatório do Mês
+            </button>
+        </div>
+
         <nav class="main-menu icon-only-menu">
             <button class="menu-btn active" data-view="view-calendar" title="Calendário"><i class="ph ph-calendar-blank"></i></button>
             <button class="menu-btn" data-view="view-parties" title="Festas Agendadas"><i class="ph ph-confetti"></i></button>
@@ -105,25 +114,27 @@
 
             <section id="view-parties" class="view-section hidden">
                 <div class="section-header">
-                    <h2>Lista de Festas</h2>
-                    <div class="filter-panel">
-                        <div class="filter-group">
-                            <label><i class="ph ph-funnel"></i> Status</label>
-                            <select id="filter-status">
-                                <option value="all">Todas as Festas</option>
-                                <option value="agendada">Apenas Agendadas</option>
-                                <option value="concluida">Apenas Concluídas</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label><i class="ph ph-calendar"></i> Mês / Ano</label>
-                            <select id="filter-month">
-                                <option value="all">Todos os Meses</option>
-                            </select>
-                        </div>
+                    <h2><i class="ph ph-list-bullets"></i> Lista de Festas</h2>
+                </div>
+                <div class="filter-panel modern-filter">
+                    <div class="filter-group">
+                        <label><i class="ph ph-funnel"></i> Exibir Status</label>
+                        <select id="filter-status">
+                            <option value="all">Todas as Festas</option>
+                            <option value="agendada">Apenas Agendadas</option>
+                            <option value="concluida">Apenas Concluídas</option>
+                        </select>
+                    </div>
+                    <div class="filter-separator"></div>
+                    <div class="filter-group">
+                        <label><i class="ph ph-calendar"></i> Período (Mês / Ano)</label>
+                        <select id="filter-month">
+                            <option value="all">Todos os Meses</option>
+                        </select>
                     </div>
                 </div>
-                <div class="party-list" id="party-list-container">
+                
+                <div class="party-list" id="party-list-container" style="margin-top: 20px;">
                     <p>Nenhuma festa encontrada.</p>
                 </div>
             </section>
@@ -133,77 +144,124 @@
                     <h2><i class="ph ph-calendar-plus" style="color: var(--accent-color); margin-right: 8px;"></i> Agendar Nova Festa</h2>
                 </div>
                 <form id="form-add-party" class="standard-form">
+                    
                     <div class="form-section-box">
                         <h3 class="form-section-title"><i class="ph ph-confetti"></i> Detalhes do Evento</h3>
                         <div class="form-row">
                             <div class="input-group full-width">
-                                <label><i class="ph ph-text-aa"></i> Nome da Festa</label>
-                                <input type="text" id="party-name" placeholder="Ex: Aniversário João (15 anos)" required>
+                                <label>Nome da Festa</label>
+                                <input type="text" id="party-name" placeholder="Ex: Festa 15 anos" required>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="input-group full-width">
-                                <label><i class="ph ph-map-pin"></i> Endereço Completo (Local)</label>
-                                <input type="text" id="party-address" placeholder="Rua, número, bairro ou nome do salão" required>
+                                <label>Local da Festa (Endereço do Evento ou Salão)</label>
+                                <input type="text" id="party-address" placeholder="Ex: Country House ou Rua X..." required>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="input-group highlight-input">
-                                <label><i class="ph ph-speaker-hifi"></i> Equipamento Contratado</label>
-                                <select id="party-eq" required>
-                                    <option value="" disabled selected>Carregando equipamentos...</option>
-                                </select>
+                                <label>Equipamentos Contratados</label>
+                                <div id="party-eq-container" class="checkbox-container">Carregando equipamentos...</div>
+                                <p class="help-text">Selecione e configure os valores para cálculo automático</p>
                             </div>
                             <div class="input-group">
-                                <label><i class="ph ph-calendar-blank"></i> Data do Evento</label>
+                                <label>Data do Evento</label>
                                 <input type="date" id="party-date" required>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="input-group">
-                                <label><i class="ph ph-clock"></i> Início do Trabalho</label>
+                                <label>Início do Trabalho</label>
                                 <input type="time" id="party-start-time" required>
                             </div>
                             <div class="input-group">
-                                <label><i class="ph ph-hourglass"></i> Qtd. de Horas</label>
+                                <label>Qtd. de Horas</label>
                                 <input type="number" id="party-hours" min="1" step="0.5" placeholder="Ex: 4" required>
                             </div>
                             <div class="input-group">
-                                <label><i class="ph ph-flag-checkered"></i> Fim do Trabalho</label>
+                                <label>Fim do Trabalho</label>
                                 <input type="time" id="party-end-time" readonly class="input-disabled" title="Calculado automaticamente">
                             </div>
                         </div>
                     </div>
 
                     <div class="form-section-box">
-                        <h3 class="form-section-title"><i class="ph ph-user"></i> Cliente & Financeiro</h3>
+                        <h3 class="form-section-title"><i class="ph ph-user"></i> Dados do Contratante</h3>
                         <div class="form-row">
-                            <div class="input-group">
-                                <label><i class="ph ph-identification-card"></i> Nome do Contratante</label>
+                            <div class="input-group full-width">
+                                <label>Nome Completo</label>
                                 <input type="text" id="client-name" placeholder="Nome completo" required>
                             </div>
                             <div class="input-group">
-                                <label><i class="ph ph-whatsapp-logo"></i> WhatsApp</label>
+                                <label>CPF</label>
+                                <input type="text" id="client-cpf" placeholder="000.000.000-00" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Telefone / WhatsApp</label>
                                 <input type="tel" id="client-whatsapp" placeholder="(00) 00000-0000" required>
                             </div>
                         </div>
                         <div class="form-row">
-                            <div class="input-group">
-                                <label><i class="ph ph-currency-circle-dollar"></i> Valor Total Cobrado R$</label>
-                                <input type="number" step="0.01" id="party-value" placeholder="0,00" required>
+                            <div class="input-group" style="flex: 0.5;">
+                                <label>CEP</label>
+                                <input type="text" id="client-cep" placeholder="00000-000" required>
                             </div>
-                            <div class="input-group financial-input">
-                                <label><i class="ph ph-hand-coins"></i> Valor de Entrada (Já pago) R$</label>
-                                <input type="number" step="0.01" id="party-paid" placeholder="0,00" value="0">
+                            <div class="input-group" style="flex: 2;">
+                                <label>Rua</label>
+                                <input type="text" id="client-rua" required>
+                            </div>
+                            <div class="input-group" style="flex: 0.5;">
+                                <label>Número</label>
+                                <input type="text" id="client-numero" required>
                             </div>
                         </div>
                         <div class="form-row">
-                            <div class="input-group full-width">
-                                <label><i class="ph ph-users"></i> Equipe (Staff)</label>
+                            <div class="input-group">
+                                <label>Bairro</label>
+                                <input type="text" id="client-bairro" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Cidade</label>
+                                <input type="text" id="client-cidade" required>
+                            </div>
+                            <div class="input-group" style="flex: 0.5;">
+                                <label>Estado (UF)</label>
+                                <input type="text" id="client-estado" maxlength="2" placeholder="Ex: SP" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-box">
+                        <h3 class="form-section-title"><i class="ph ph-currency-circle-dollar"></i> Financeiro & Equipe</h3>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label>Desconto Global da Festa</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="party-desc-type" onchange="window.calcTotalNovo('party')" style="width: 80px;">
+                                        <option value="R$">R$</option>
+                                        <option value="%">%</option>
+                                    </select>
+                                    <input type="number" step="0.01" id="party-desconto-global" placeholder="0,00" value="0" oninput="window.calcTotalNovo('party')" style="flex: 1;">
+                                </div>
+                            </div>
+                            <div class="input-group financial-input">
+                                <label>VALOR TOTAL (Calculado)</label>
+                                <input type="number" step="0.01" id="party-value" placeholder="0,00" readonly class="input-disabled" style="color: var(--accent-color); font-size: 20px;">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group financial-input" style="flex: 1;">
+                                <label>Valor de Entrada (Já pago) R$</label>
+                                <input type="number" step="0.01" id="party-paid" placeholder="0,00" value="0">
+                            </div>
+                            <div class="input-group full-width" style="flex: 2;">
+                                <label>Equipe (Staff)</label>
                                 <input type="text" id="party-staff" placeholder="Ex: Eu e Auxiliar">
                             </div>
                         </div>
                     </div>
+
                     <button type="submit" class="btn-primary large-btn"><i class="ph ph-check-circle"></i> Confirmar Agendamento</button>
                 </form>
             </section>
@@ -212,7 +270,6 @@
                 <div class="section-header">
                     <h2><i class="ph ph-speaker-hifi" style="color: var(--accent-color); margin-right: 8px;"></i> Gerenciar Equipamentos</h2>
                 </div>
-                
                 <form id="form-add-equipment" class="standard-form" style="margin-bottom: 40px;">
                     <div class="form-section-box">
                         <div class="form-row">
@@ -241,85 +298,164 @@
 
     <div id="modal-party-details" class="modal hidden">
         <div class="modal-content modal-large">
-            <span class="close-modal" id="close-modal">×</span>
+            <span class="close-modal" onclick="document.getElementById('modal-party-details').classList.add('hidden')">×</span>
             <h2 id="modal-title">Eventos do Dia</h2>
             <div class="modal-body" id="modal-dynamic-content"></div>
         </div>
     </div>
 
+    <div id="modal-edit-equipment" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-modal" onclick="document.getElementById('modal-edit-equipment').classList.add('hidden')">×</span>
+            <h2 style="color: var(--accent-color); margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                <i class="ph ph-pencil-simple"></i> Editar Equipamento
+            </h2>
+            <form id="form-edit-equipment" class="standard-form">
+                <input type="hidden" id="edit-eq-id">
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label>Nome do Equipamento</label>
+                        <input type="text" id="edit-eq-name-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label>Valor Sugerido R$</label>
+                        <input type="number" step="0.01" id="edit-eq-value-input" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary large-btn" style="margin-top: 20px;">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
     <div id="modal-edit-party" class="modal hidden">
         <div class="modal-content modal-large">
-            <span class="close-modal" id="close-modal-edit">×</span>
+            <span class="close-modal" onclick="document.getElementById('modal-edit-party').classList.add('hidden')">×</span>
             <h2 style="color: var(--accent-color); margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                 <i class="ph ph-pencil-simple"></i> Editar Festa
             </h2>
             <form id="form-edit-party" class="standard-form">
                 <input type="hidden" id="edit-party-id">
-                <div class="form-row">
-                    <div class="input-group full-width">
-                        <label>Nome da Festa</label>
-                        <input type="text" id="edit-party-name" required>
+                
+                <div class="form-section-box">
+                    <h3 class="form-section-title"><i class="ph ph-confetti"></i> Detalhes do Evento</h3>
+                    <div class="form-row">
+                        <div class="input-group full-width">
+                            <label>Nome da Festa</label>
+                            <input type="text" id="edit-party-name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group full-width">
+                            <label>Endereço / Local da Festa</label>
+                            <input type="text" id="edit-party-address" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group highlight-input">
+                            <label>Equipamentos Contratados</label>
+                            <div id="edit-party-eq-container" class="checkbox-container">Carregando equipamentos...</div>
+                            <p class="help-text">Selecione e configure os valores</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Data</label>
+                            <input type="date" id="edit-party-date" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Início do Trabalho</label>
+                            <input type="time" id="edit-party-start-time" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Qtd. de Horas</label>
+                            <input type="number" id="edit-party-hours" min="1" step="0.5" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Fim do Trabalho</label>
+                            <input type="time" id="edit-party-end-time" readonly class="input-disabled">
+                        </div>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="input-group full-width">
-                        <label>Endereço / Local da Festa</label>
-                        <input type="text" id="edit-party-address" required>
+
+                <div class="form-section-box">
+                    <h3 class="form-section-title"><i class="ph ph-user"></i> Dados do Contratante</h3>
+                    <div class="form-row">
+                        <div class="input-group full-width">
+                            <label>Nome do Contratante</label>
+                            <input type="text" id="edit-client-name" required>
+                        </div>
+                        <div class="input-group">
+                            <label>CPF</label>
+                            <input type="text" id="edit-client-cpf" required>
+                        </div>
+                        <div class="input-group">
+                            <label>WhatsApp</label>
+                            <input type="tel" id="edit-client-whatsapp" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group" style="flex: 0.5;">
+                            <label>CEP</label>
+                            <input type="text" id="edit-client-cep" required>
+                        </div>
+                        <div class="input-group" style="flex: 2;">
+                            <label>Rua</label>
+                            <input type="text" id="edit-client-rua" required>
+                        </div>
+                        <div class="input-group" style="flex: 0.5;">
+                            <label>Número</label>
+                            <input type="text" id="edit-client-numero" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Bairro</label>
+                            <input type="text" id="edit-client-bairro" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Cidade</label>
+                            <input type="text" id="edit-client-cidade" required>
+                        </div>
+                        <div class="input-group" style="flex: 0.5;">
+                            <label>UF</label>
+                            <input type="text" id="edit-client-estado" maxlength="2" required>
+                        </div>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="input-group highlight-input">
-                        <label>Equipamento</label>
-                        <select id="edit-party-eq" required>
-                            <option value="" disabled selected>Selecione o equipamento...</option>
-                        </select>
+
+                <div class="form-section-box">
+                    <h3 class="form-section-title"><i class="ph ph-currency-circle-dollar"></i> Financeiro & Equipe</h3>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Desconto Global da Festa</label>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="edit-party-desc-type" onchange="window.calcTotalNovo('edit-party')" style="width: 80px;">
+                                    <option value="R$">R$</option>
+                                    <option value="%">%</option>
+                                </select>
+                                <input type="number" step="0.01" id="edit-party-desconto-global" placeholder="0,00" value="0" oninput="window.calcTotalNovo('edit-party')" style="flex: 1;">
+                            </div>
+                        </div>
+                        <div class="input-group financial-input">
+                            <label>VALOR TOTAL (Calculado)</label>
+                            <input type="number" step="0.01" id="edit-party-value" placeholder="0,00" readonly class="input-disabled" style="color: var(--accent-color); font-size: 20px;">
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label>Data</label>
-                        <input type="date" id="edit-party-date" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Início do Trabalho</label>
-                        <input type="time" id="edit-party-start-time" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Qtd. de Horas</label>
-                        <input type="number" id="edit-party-hours" min="1" step="0.5" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Fim do Trabalho</label>
-                        <input type="time" id="edit-party-end-time" readonly class="input-disabled">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Nome do Contratante</label>
-                        <input type="text" id="edit-client-name" required>
-                    </div>
-                    <div class="input-group">
-                        <label>WhatsApp</label>
-                        <input type="tel" id="edit-client-whatsapp" required>
+                    <div class="form-row">
+                        <div class="input-group financial-input" style="flex: 1;">
+                            <label>Total Já Pago R$</label>
+                            <input type="number" step="0.01" id="edit-party-paid" required>
+                        </div>
+                        <div class="input-group full-width" style="flex: 2;">
+                            <label>Equipe</label>
+                            <input type="text" id="edit-party-staff">
+                        </div>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Valor Total R$</label>
-                        <input type="number" step="0.01" id="edit-party-value" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Total Já Pago R$</label>
-                        <input type="number" step="0.01" id="edit-party-paid" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group full-width">
-                        <label>Equipe</label>
-                        <input type="text" id="edit-party-staff">
-                    </div>
-                </div>
-                <button type="submit" class="btn-primary large-btn">Salvar Alterações</button>
+
+                <button type="submit" class="btn-primary large-btn" style="margin-top: 20px;">Salvar Alterações</button>
             </form>
         </div>
     </div>
