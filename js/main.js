@@ -17,15 +17,19 @@ const partyModal = document.getElementById('modal-party-details');
 const editModal = document.getElementById('modal-edit-party');
 const editEqModal = document.getElementById('modal-edit-equipment');
 
-const filterStatus = document.getElementById('filter-status');
-const filterMonth = document.getElementById('filter-month');
+const closeModalBtn = document.getElementById('close-modal');
+const closeEditModalBtn = document.getElementById('close-modal-edit');
+const closeEditEqModalBtn = document.getElementById('close-modal-edit-eq');
 
 let dataAtualCalendario = new Date();
 let festasGlobais = [];
 let equipamentosGlobais = []; 
 
+const filterStatus = document.getElementById('filter-status');
+const filterMonth = document.getElementById('filter-month');
+
 // ========================================================
-// SISTEMA DE NOTIFICAÇÕES (TOAST) E CONFIRMAÇÕES (MODAL)
+// SISTEMA DE NOTIFICAÇÕES E CONFIRMAÇÕES
 // ========================================================
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -67,9 +71,6 @@ function customConfirm(message, onConfirm) {
 }
 window.customConfirm = customConfirm;
 
-// ========================================================
-// GERADOR DE NÚMERO POR EXTENSO E FORMATADOR DE CPF
-// ========================================================
 function formatarCPFParaContrato(cpf) {
     if (!cpf) return '__________________';
     let num = cpf.replace(/\D/g, '');
@@ -176,10 +177,8 @@ window.gerarContratoWord = async function(idFesta) {
     let textoEquipamentoFinal = txtEquips.join(" e ");
     if(textoEquipamentoFinal === "") textoEquipamentoFinal = "de prestação de serviços para o evento";
 
-    // Pega EXATAMENTE o endereço que foi digitado na criação da festa
     let enderecoFinalFesta = festa.endereco || '__________________';
 
-    // REMOVIDA A IMAGEM COMO SOLICITADO
     const conteudoWordHtml = `
         <div style="font-family: Arial, sans-serif; font-size: 11pt; text-align: justify; line-height: 1.5;">
             <p style="text-align: center; font-weight: bold; font-size: 14pt;">
@@ -252,14 +251,13 @@ window.gerarContratoWord = async function(idFesta) {
             
             <p>Volta Redonda, ${dataAssinatura}.</p>
             
-            <br><br><br><br>
+            <br><br><br>
             <div style="text-align: center;">
                 <p style="margin: 0;">_____________________________________________</p>
                 <p style="font-weight: bold; margin: 0;">CONTRATADO</p>
                 <p style="margin: 0;">(Maby eventos)</p>
             </div>
-            <br><br><br><br>
-            
+            <br><br><br>
             <div style="text-align: center;">
                 <p style="margin: 0;">_____________________________________________</p>
                 <p style="font-weight: bold; margin: 0;">CONTRATANTE</p>
@@ -401,7 +399,6 @@ if(btnGerarRelatorio) {
     btnGerarRelatorio.addEventListener('click', window.gerarRelatorioWord);
 }
 
-
 // ========================================================
 // MÁSCARAS DE INPUTS E CEPS
 // ========================================================
@@ -501,38 +498,37 @@ menuButtons.forEach(btn => {
     });
 });
 
-function setupCalculoHoras(inputIdStart, inputIdHours, inputIdEnd) {
-    const startInput = document.getElementById(inputIdStart);
-    const hoursInput = document.getElementById(inputIdHours);
-    const endInput = document.getElementById(inputIdEnd);
+window.calcTime = function(prefix) {
+    const startInput = document.getElementById(`${prefix}-start-time`);
+    const hoursInput = document.getElementById(`${prefix}-hours`);
+    const endInput = document.getElementById(`${prefix}-end-time`);
+    
+    const cbPausa = document.getElementById(`${prefix}-has-pause`);
+    const temPausa = cbPausa ? cbPausa.checked : false;
+    const horasPausa = temPausa ? (parseFloat(document.getElementById(`${prefix}-pause-hours`)?.value) || 0) : 0;
 
-    function calc() {
-        if (startInput && hoursInput && startInput.value && hoursInput.value) {
-            const [hours, minutes] = startInput.value.split(':').map(Number);
-            const duration = parseFloat(hoursInput.value);
-            const durationHours = Math.floor(duration);
-            const durationMinutes = Math.round((duration - durationHours) * 60);
+    if (startInput && hoursInput && startInput.value && hoursInput.value) {
+        const [hours, minutes] = startInput.value.split(':').map(Number);
+        
+        const durationTrabalho = parseFloat(hoursInput.value) || 0;
+        const durationTotal = durationTrabalho + horasPausa;
+        
+        const durationHours = Math.floor(durationTotal);
+        const durationMinutes = Math.round((durationTotal - durationHours) * 60);
 
-            let endHours = hours + durationHours;
-            let endMinutes = minutes + durationMinutes;
+        let endHours = hours + durationHours;
+        let endMinutes = minutes + durationMinutes;
 
-            if (endMinutes >= 60) {
-                endHours += Math.floor(endMinutes / 60);
-                endMinutes = endMinutes % 60;
-            }
-            endHours = endHours % 24; 
-            if(endInput) endInput.value = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-        } else if (endInput) { 
-            endInput.value = ''; 
+        if (endMinutes >= 60) {
+            endHours += Math.floor(endMinutes / 60);
+            endMinutes = endMinutes % 60;
         }
-    }
-    if (startInput && hoursInput) {
-        startInput.addEventListener('input', calc);
-        hoursInput.addEventListener('input', calc);
+        endHours = endHours % 24; 
+        if(endInput) endInput.value = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+    } else if (endInput) { 
+        endInput.value = ''; 
     }
 }
-setupCalculoHoras('party-start-time', 'party-hours', 'party-end-time');
-setupCalculoHoras('edit-party-start-time', 'edit-party-hours', 'edit-party-end-time');
 
 // ========================================================
 // CÁLCULO DE VALOR DE FESTA COM DESCONTO E PAUSA
@@ -1325,5 +1321,16 @@ if(formAddParty) {
             if(calBtn) calBtn.click();
         } catch (error) { showToast("Erro ao agendar festa.", "error"); } 
         finally { btnSubmit.innerHTML = textoOriginal; btnSubmit.disabled = false; }
+    });
+}
+
+// ========================================================
+// REGISTRO DO SERVICE WORKER (TRANSFORMA EM APP INSTALÁVEL)
+// ========================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then((reg) => console.log('App MabyEventos configurado para instalação!', reg.scope))
+            .catch((err) => console.error('Erro ao configurar PWA:', err));
     });
 }
